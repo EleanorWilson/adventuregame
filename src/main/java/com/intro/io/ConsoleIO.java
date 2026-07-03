@@ -1,5 +1,6 @@
 package com.intro.io;
 
+import com.intro.config.GameConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -100,5 +101,20 @@ public class ConsoleIO implements GameIO {
         logger.debug("clearOutput: writing ANSI clear-screen sequence");
         System.out.print("\033[H\033[2J");
         System.out.flush();
+    }
+
+    /**
+     * Prints a three-line banner using a fixed line width from
+     * {@code io.console.line.width} in {@code config.properties}.
+     *
+     * @param title the banner title to center; must not be {@code null}
+     */
+    @Override
+    public void printBanner(String title) {
+        logger.debug("printBanner: [{}]", title);
+        int width = GameConfig.getInt("io.console.line.width", 80);
+        println(NarrativeFormatter.separatorLine(width));
+        println(NarrativeFormatter.centeredLine(title, width));
+        println(NarrativeFormatter.separatorLine(width));
     }
 }

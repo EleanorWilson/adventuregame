@@ -58,10 +58,7 @@ public class PlayerSetupScene implements Scene {
                     break;
                 } else if (answer.charAt(0) == 'n' || answer.charAt(0) == '2') {
                     io.clearOutput();
-                    io.println();
-                    io.println("*******************************************************");
-                    io.println("                THE ENCHANTED FOREST");
-                    io.println("*******************************************************");
+                    io.printBanner("THE ENCHANTED FOREST");
                     return SceneID.FOREST;
                 } else {
                     io.println("You have entered an invalid response, please try again.");

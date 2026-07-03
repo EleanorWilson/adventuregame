@@ -4,9 +4,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.intro</groupId>
+    <groupId>com.intro</groupId>
     <artifactId>adventuregame</artifactId>
-    <version>00.00.01</version>
+    <version>1.00.00</version>
     <packaging>jar</packaging>
 
     <properties>

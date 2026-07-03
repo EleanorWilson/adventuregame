@@ -1446,3 +1446,6 @@ java.lang.RuntimeException: Test Exception
 [INFO ] 2026-07-02 17:59:52.439 [game-engine-thread] GameWindow - Game engine thread started
 [INFO ] 2026-07-02 17:59:52.442 [game-engine-thread] GameEngine - Game started
 [INFO ] 2026-07-02 18:00:26.906 [JavaFX Application Thread] GameWindow - WindowControls.close() -> Platform.exit() and System.exit(0)
+[INFO ] 2026-07-03 11:36:58.512 [main] GameConfig - Loaded 10 setting(s) from 'config.properties'.
+[WARN ] 2026-07-03 11:36:58.515 [main] GameConfig - getDouble('game.debug.enabled') — 'false' is not a valid number, using default: 9.9
+[WARN ] 2026-07-03 11:36:58.536 [main] GameConfig - getInt('game.debug.enabled') — 'false' is not a valid integer, using default: 99

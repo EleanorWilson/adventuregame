@@ -4,7 +4,6 @@ import com.intro.io.GameIO;
 import com.intro.model.Player;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -16,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 /**
- * Unit tests for {@link AcceptQuestSceneTest}.
+ * Unit tests for {@link AcceptQuestScene}.
  *
  * <p>
  *     Uses Mockito to mock {@link GameIO} and {@link Player} so that tests are
@@ -37,30 +36,30 @@ class AcceptQuestSceneTest {
     private Player mockPlayer;
 
     /** The scene under test. */
-    private AcceptQuestSceneTest scene;
+    private AcceptQuestScene scene;
 
     /**
-     * Creates a fresh {@link AcceptQuestSceneTest} before each test.
+     * Creates a fresh {@link AcceptQuestScene} before each test.
      */
     @BeforeEach
     void setUp() {
         logger.debug("Setting up AcceptQuestSceneTest");
-        scene = new AcceptQuestSceneTest();
+        scene = new AcceptQuestScene();
     }
 
     /**
-     * Verifies that {@link AcceptQuestSceneTest#getID()} returns {@link SceneID#ACCEPT}.
+     * Verifies that {@link AcceptQuestScene#getID()} returns {@link SceneID#ACCEPT}.
      */
     @Test
     @DisplayName("getID() returns SceneID.ACCEPT")
     void testGetIDReturnsAccept() {
         logger.debug("Testing getID returns ACCEPT");
-        Assertions.assertEquals(SceneID.ACCEPT, scene.getID(),
+        assertEquals(SceneID.ACCEPT, scene.getID(),
                 "getID() should return SceneID.ACCEPT");
     }
 
     /**
-     * Verifies that {@link AcceptQuestSceneTest#play(Player, GameIO)} returns
+     * Verifies that {@link AcceptQuestScene#play(Player, GameIO)} returns
      * {@code null}, which signals the game loop to end.
      */
     @Test
@@ -75,7 +74,7 @@ class AcceptQuestSceneTest {
     }
 
     /**
-     * Verifies that {@link AcceptQuestSceneTest#play(Player, GameIO)} retrieves the
+     * Verifies that {@link AcceptQuestScene#play(Player, GameIO)} retrieves the
      * player's name and includes it in the victory narrative printed to the IO.
      */
     @Test
@@ -91,7 +90,7 @@ class AcceptQuestSceneTest {
     }
 
     /**
-     * Verifies that {@link AcceptQuestSceneTest#play(Player, GameIO)} calls
+     * Verifies that {@link AcceptQuestScene#play(Player, GameIO)} calls
      * {@link GameIO#println(String)} at least once to print narrative text.
      */
     @Test

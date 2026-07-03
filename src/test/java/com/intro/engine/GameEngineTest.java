@@ -56,8 +56,7 @@ class GameEngineTest {
 
     /**
      * Verifies that {@link GameEngine#printGameOver()} calls {@link GameIO#println()}
-     * for the blank line and three calls to {@link GameIO#println(String)} for the
-     * GAME OVER banner.
+     * for the blank line and {@link GameIO#printBanner(String)} for the banner.
      */
     @Test
     @DisplayName("printGameOver() prints the game over banner to io")
@@ -68,8 +67,7 @@ class GameEngineTest {
         engine.printGameOver();
 
         verify(mockIO).println();
-        verify(mockIO, times(2)).println("******************************************************");
-        verify(mockIO).println("                      GAME OVER");
+        verify(mockIO).printBanner("GAME OVER");
     }
 
     // -------------------------------------------------------------------------
@@ -135,7 +133,7 @@ class GameEngineTest {
         GameEngine engine = new GameEngine(mockIO, scenes);
         engine.run();
 
-        verify(mockIO).println("                      GAME OVER");
+        verify(mockIO).printBanner("GAME OVER");
     }
 
     // -------------------------------------------------------------------------
@@ -160,7 +158,7 @@ class GameEngineTest {
         engine.run();
 
         verify(mockIO).println("ERROR: Unknown Scene 'FIGHT'.");
-        verify(mockIO).println("                      GAME OVER");
+        verify(mockIO).printBanner("GAME OVER");
     }
 
     // -------------------------------------------------------------------------
@@ -186,7 +184,7 @@ class GameEngineTest {
         engine.run();
 
         verify(mockIO).println(contains("Test exception"));
-        verify(mockIO).println("                      GAME OVER");
+        verify(mockIO).printBanner("GAME OVER");
     }
 
     // -------------------------------------------------------------------------
@@ -207,6 +205,6 @@ class GameEngineTest {
         engine.run();
 
         verify(mockIO).println("ERROR: Unknown Scene 'PLAYER_SETUP'.");
-        verify(mockIO).println("                      GAME OVER");
+        verify(mockIO).printBanner("GAME OVER");
     }
 }

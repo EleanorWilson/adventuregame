@@ -236,6 +236,7 @@ class PlayerSetupSceneTest {
 
         InOrder inOrder = inOrder(mockIO);
         inOrder.verify(mockIO).clearOutput();
-        inOrder.verify(mockIO).println("                THE ENCHANTED FOREST");
+        inOrder.verify(mockIO).println();
+        inOrder.verify(mockIO).printBanner("THE ENCHANTED FOREST");
     }
 }

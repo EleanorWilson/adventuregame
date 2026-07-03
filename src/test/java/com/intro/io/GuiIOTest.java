@@ -348,4 +348,22 @@ class GuiIOTest {
 
         verify(mockPanel).clearNarrativeText();
     }
+
+    // -------------------------------------------------------------------------
+    // printBanner() tests
+    // -------------------------------------------------------------------------
+
+    /**
+     * Verifies that {@link GuiIO#printBanner(String)} delegates to
+     * {@link GamePanel#appendBanner(String)} via the injected UI scheduler.
+     */
+    @Test
+    @DisplayName("printBanner() delegates to GamePanel.appendBanner()")
+    void printBanner_delegatesToGamePanelAppendBanner() {
+        logger.debug("Testing printBanner delegates to GamePanel.appendBanner()");
+
+        guiIO.printBanner("THE ENCHANTED FOREST");
+
+        verify(mockPanel).appendBanner("THE ENCHANTED FOREST");
+    }
 }

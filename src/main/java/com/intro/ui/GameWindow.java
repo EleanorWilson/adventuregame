@@ -112,12 +112,12 @@ public class GameWindow extends Application {
 
         GuiIO guiIO = new GuiIO(controller);
 
-        double width  = GameConfig.getDouble("ui.window.default.width",  900);
-        double height = GameConfig.getDouble("ui.window.default.height", 620);
+        double width  = GameConfig.getDouble("ui.window.default.width",  600);
+        double height = GameConfig.getDouble("ui.window.default.height", 600);
         Scene scene = new Scene(root, width, height);
         applyStylesheet(scene);
 
-        double minWidth  = GameConfig.getDouble("ui.window.min.width",   600);
+        double minWidth  = GameConfig.getDouble("ui.window.min.width",   400);
         double minHeight = GameConfig.getDouble("ui.window.min.height",  400);
         WindowResizeHandler.attach(root, stage, minWidth, minHeight);
 
@@ -243,7 +243,7 @@ public class GameWindow extends Application {
             @Override
             public void toggleMaximise() {
                 boolean next = !stage.isMaximized();
-                logger.debug("WindowControls.toggleMaximise() → {}", next);
+                logger.debug("WindowControls.toggleMaximise() -> {}", next);
                 stage.setMaximized(next);
             }
 
@@ -263,10 +263,10 @@ public class GameWindow extends Application {
      * @param scene the scene to style.
      */
     private void applyStylesheet(Scene scene) {
-        URL cssUrl = getClass().getResource("/com/intro/ui/game.css");
-        if (cssUrl != null) {
-            scene.getStylesheets().add(cssUrl.toExternalForm());
-            logger.debug("Stylesheet applied: {}", cssUrl);
+        URL cssURL = getClass().getResource("/com/intro/ui/game.css");
+        if (cssURL != null) {
+            scene.getStylesheets().add(cssURL.toExternalForm());
+            logger.debug("Stylesheet applied: {}", cssURL);
         } else {
             logger.warn("game.css not found on classpath — using default JavaFX styles");
         }

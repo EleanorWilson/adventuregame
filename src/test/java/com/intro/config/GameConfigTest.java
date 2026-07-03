@@ -61,8 +61,8 @@ class GameConfigTest {
     @DisplayName("getString returns the configured value for a present key")
     void getString_presentKey_returnsConfiguredValue() {
         logger.debug("Testing getString with a present key");
-        assertEquals("900", GameConfig.getString("ui.window.default.width", "default"),
-                "getString should return '900' from config.properties");
+        assertEquals("600", GameConfig.getString("ui.window.default.width", "default"),
+                "getString should return '600' from config.properties");
     }
 
     /**
@@ -96,8 +96,8 @@ class GameConfigTest {
     @DisplayName("getInt returns the configured integer for a present key")
     void getInt_presentKey_returnsConfiguredValue() {
         logger.debug("Testing getInt with ui.window.default.width");
-        assertEquals(900, GameConfig.getInt("ui.window.default.width", 0),
-                "getInt should return 900 for ui.window.default.width");
+        assertEquals(600, GameConfig.getInt("ui.window.default.width", 0),
+                "getInt should return 600 for ui.window.default.width");
     }
 
     /**
@@ -176,8 +176,8 @@ class GameConfigTest {
     @DisplayName("getDouble returns the configured double for a present key")
     void getDouble_presentKey_returnsConfiguredValue() {
         logger.debug("Testing getDouble with ui.window.default.height");
-        assertEquals(620.0, GameConfig.getDouble("ui.window.default.height", 0.0),
-                "getDouble should return 620.0 for ui.window.default.height");
+        assertEquals(600, GameConfig.getDouble("ui.window.default.height", 0.0),
+                "getDouble should return 600 for ui.window.default.height");
     }
 
     /**

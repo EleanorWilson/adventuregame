@@ -109,9 +109,7 @@ public class GameEngine {
      */
     public void printGameOver() {
         this.io.println();
-        this.io.println("******************************************************");
-        this.io.println("                      GAME OVER");
-        this.io.println("******************************************************");
+        this.io.printBanner("GAME OVER");
     }
 
     /**

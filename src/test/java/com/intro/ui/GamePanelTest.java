@@ -11,6 +11,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import javafx.geometry.Insets;
+
 import java.lang.reflect.Field;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -417,6 +419,27 @@ class GamePanelTest {
                 "The first offer should succeed on an empty queue (capacity 1)");
         assertFalse(inputQueue.offer("second"),
                 "The second offer should be rejected — queue is already at capacity");
+    }
+
+    // -------------------------------------------------------------------------
+    // availableNarrativePixels — pure function
+    // -------------------------------------------------------------------------
+
+    /**
+     * Verifies that {@link GamePanel#availableNarrativePixels(double, Insets, double, double)}
+     * subtracts outer padding, inner content padding, and scrollbar width from the
+     * total narrative area width.
+     */
+    @Test
+    @DisplayName("availableNarrativePixels() subtracts padding and scrollbar from area width")
+    void availableNarrativePixels_subtractsInsetsAndScrollbar() {
+        logger.debug("Testing availableNarrativePixels subtracts insets and scrollbar");
+
+        double result = GamePanel.availableNarrativePixels(
+                400, new Insets(12, 12, 12, 12), 120, 14);
+
+        assertEquals(242, result, 0.001,
+                "Available width should be area minus outer padding, content padding, and scrollbar");
     }
 
     // -------------------------------------------------------------------------

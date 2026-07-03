@@ -258,4 +258,21 @@ public class GuiIO implements GameIO {
         logger.debug("clearOutput");
         uiScheduler.accept(gamePanel::clearNarrativeText);
     }
+
+    /**
+     * Formats and appends a three-line banner to the narrative area.
+     *
+     * <p>
+     *     Formatting runs on the JavaFX Application Thread via
+     *     {@link #uiScheduler} so line width reflects the live
+     *     {@link GamePanel} layout.
+     * </p>
+     *
+     * @param title the banner title to center; must not be {@code null}
+     */
+    @Override
+    public void printBanner(String title) {
+        logger.debug("printBanner: [{}]", title);
+        uiScheduler.accept(() -> gamePanel.appendBanner(title));
+    }
 }

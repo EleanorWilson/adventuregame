@@ -41,4 +41,16 @@ public interface GameIO {
      */
     void clearOutput();
 
+    /**
+     * Prints a three-line banner: separator, centered title, separator.
+     *
+     * <p>
+     *     Line width is determined by the IO implementation — the GUI uses the
+     *     current narrative area width; console mode uses a fixed config width.
+     * </p>
+     *
+     * @param title the banner title to center; must not be {@code null}
+     */
+    void printBanner(String title);
+
 }

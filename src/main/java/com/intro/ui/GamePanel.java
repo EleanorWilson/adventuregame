@@ -1,11 +1,16 @@
 package com.intro.ui;
 
+import com.intro.config.GameConfig;
+import com.intro.io.NarrativeFormatter;
 import javafx.fxml.FXML;
+import javafx.geometry.Insets;
 import javafx.scene.control.Button;
+import javafx.scene.control.ScrollBar;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.Region;
 import javafx.scene.shape.FillRule;
 import javafx.scene.shape.SVGPath;
 import javafx.stage.Stage;
@@ -871,6 +876,113 @@ public class GamePanel {
      */
     public void clearNarrativeText() {
         narrativeArea.clear();
+    }
+
+    /**
+     * Returns how many monospace characters fit on one line in the narrative area.
+     *
+     * <p>
+     *     <strong>Must be called on the JavaFX Application Thread.</strong>
+     *     Accounts for {@code TextArea} padding, the inner content margins defined
+     *     in {@code game.css}, and a visible vertical scrollbar when present.
+     * </p>
+     *
+     * @return character count for one banner line
+     */
+    public int getNarrativeLineWidthChars() {
+        double areaWidth = narrativeArea.getWidth();
+        if (areaWidth <= 0) {
+            return GameConfig.getInt("io.narrative.fallback.width", 40);
+        }
+
+        double available = availableNarrativePixels(
+                areaWidth,
+                narrativeArea.getPadding(),
+                getNarrativeContentHorizontalPadding(),
+                getVisibleVerticalScrollbarWidth());
+
+        return NarrativeFormatter.charsPerLine(available, narrativeArea.getFont());
+    }
+
+    /**
+     * Computes horizontal pixel space available for narrative text after padding
+     * and an optional vertical scrollbar.
+     *
+     * <p>
+     *     Package-private static helper so the arithmetic can be unit-tested
+     *     without a running JavaFX platform.
+     * </p>
+     *
+     * @param areaWidth         total width of the narrative {@link TextArea}
+     * @param outerPadding      padding applied directly on the {@code TextArea}
+     * @param contentPaddingH   combined left + right padding on the inner
+     *                          {@code .content} region
+     * @param scrollbarWidth    width reserved by a visible vertical scrollbar
+     * @return remaining horizontal pixels for text
+     */
+    static double availableNarrativePixels(
+            double areaWidth, Insets outerPadding, double contentPaddingH, double scrollbarWidth) {
+        return areaWidth - outerPadding.getLeft() - outerPadding.getRight()
+                - contentPaddingH - scrollbarWidth;
+    }
+
+    /**
+     * Returns combined left + right padding on the inner {@code .content} region
+     * of the narrative {@link TextArea}, as applied by {@code game.css}.
+     *
+     * <p>
+     *     <strong>Must be called on the JavaFX Application Thread.</strong>
+     *     Falls back to {@code io.narrative.content.padding.fallback} when the
+     *     content node is not yet in the scene graph.
+     * </p>
+     *
+     * @return horizontal content padding in pixels
+     */
+    private double getNarrativeContentHorizontalPadding() {
+        var content = narrativeArea.lookup(".content");
+        if (content instanceof Region region) {
+            var insets = region.getPadding();
+            return insets.getLeft() + insets.getRight();
+        }
+        return GameConfig.getDouble("io.narrative.content.padding.fallback", 120);
+    }
+
+    /**
+     * Returns the width reserved by a visible vertical scrollbar, if any.
+     *
+     * <p>
+     *     <strong>Must be called on the JavaFX Application Thread.</strong>
+     *     Uses {@link ScrollBar#prefWidth(double)} when layout width is not yet
+     *     available.
+     * </p>
+     *
+     * @return scrollbar width in pixels, or {@code 0} when no scrollbar is shown
+     */
+    private double getVisibleVerticalScrollbarWidth() {
+        var scrollbarNode = narrativeArea.lookup(".scroll-bar:vertical");
+        if (scrollbarNode instanceof ScrollBar vertical && vertical.isVisible()) {
+            double width = vertical.getWidth();
+            return width > 0 ? width : Math.max(0, vertical.prefWidth(-1));
+        }
+        return 0;
+    }
+
+    /**
+     * Formats and appends a three-line banner (separator, centered title, separator).
+     *
+     * <p>
+     *     <strong>Must be called on the JavaFX Application Thread.</strong>
+     *     {@link com.intro.io.GuiIO#printBanner(String)} schedules this via the
+     *     UI thread dispatcher.
+     * </p>
+     *
+     * @param title the banner title to center; must not be {@code null}
+     */
+    public void appendBanner(String title) {
+        int width = getNarrativeLineWidthChars();
+        appendNarrativeText(NarrativeFormatter.separatorLine(width) + "\n");
+        appendNarrativeText(NarrativeFormatter.centeredLine(title, width) + "\n");
+        appendNarrativeText(NarrativeFormatter.separatorLine(width) + "\n");
     }
 
     /**
