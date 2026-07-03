@@ -3,10 +3,6 @@ package com.intro.scene;
 import com.intro.io.GameIO;
 import com.intro.model.Player;
 
-/**
- * Accessed through the {@code Accept} option of the {@link SceneID#QUEST}
- * scene.
- */
 public class AcceptQuestScene implements Scene {
 
     /**
@@ -27,11 +23,11 @@ public class AcceptQuestScene implements Scene {
     @Override
     public SceneID play(Player player, GameIO io) {
         io.println();
-        io.println("You accept the quest and search the forest for the lost amulet. After many hours, you stumble across a glade in the woods. At the centre you find the amulet.");
+        io.println("You accept the quest and search the forest for the lost amulet. After many hours you stumble across a glade in the woods. At its centre you find the amulet.");
         io.println();
         io.println("You bring it to the wizard, who tells all of your epic deed.");
         io.println();
-        io.println("Bards forever more sing the praises of " + player.getName() + ", hero of the realm!");
+        io.println("Bards forever more sing the praises of " + player.getName() + ", the hero of the realm!");
 
         /* Prompts the Game Over text. */
         return null;

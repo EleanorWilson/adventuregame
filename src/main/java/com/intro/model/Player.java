@@ -11,7 +11,7 @@ public class Player {
     private String name;
 
     /**
-     * Creates a new {@code Player} object and sets {@code name} to an empty string.
+     * Creates a new {@code Player} object and sets {@code name} to an empty String.
      */
     public Player() {
         this.name = "";
@@ -20,15 +20,14 @@ public class Player {
     /**
      * Returns the player character's name. This should never be {@code null}.
      * @return Player's current name.
-     *
      */
     public String getName() {
         return this.name;
     }
 
     /**
-     * Sets the player character's name, or updates it.
-     * @param name the new character name
+     * Sets/updates the player character's name.
+     * @param name the new character name.
      */
     public void setName(String name) {
         this.name = name;

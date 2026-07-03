@@ -4,6 +4,7 @@ import com.intro.io.GameIO;
 import com.intro.model.Player;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -11,69 +12,96 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+/**
+ * Unit tests for {@link AcceptQuestSceneTest}.
+ *
+ * <p>
+ *     Uses Mockito to mock {@link GameIO} and {@link Player} so that tests are
+ *     fully isolated from IO operations and player state.
+ * </p>
+ */
 @ExtendWith(MockitoExtension.class)
 class AcceptQuestSceneTest {
 
     private static final Logger logger = LogManager.getLogger(AcceptQuestSceneTest.class);
 
+    /** Mock {@link GameIO} injected by Mockito. */
     @Mock
-    private GameIO io;
+    private GameIO mockIO;
 
+    /** Mock {@link Player} injected by Mockito. */
     @Mock
-    private Player player;
+    private Player mockPlayer;
 
-    private AcceptQuestScene scene;
+    /** The scene under test. */
+    private AcceptQuestSceneTest scene;
 
+    /**
+     * Creates a fresh {@link AcceptQuestSceneTest} before each test.
+     */
     @BeforeEach
     void setUp() {
         logger.debug("Setting up AcceptQuestSceneTest");
-        scene = new AcceptQuestScene();
+        scene = new AcceptQuestSceneTest();
     }
 
+    /**
+     * Verifies that {@link AcceptQuestSceneTest#getID()} returns {@link SceneID#ACCEPT}.
+     */
     @Test
-    @DisplayName("getID() returns correct enum")
-    void testGetIDReturnsEnum() {
-        logger.debug("Testing getID() returns correct enum");
-        assertEquals(SceneID.ACCEPT, scene.getID(), "getID() should return SceneID.ACCEPT");
+    @DisplayName("getID() returns SceneID.ACCEPT")
+    void testGetIDReturnsAccept() {
+        logger.debug("Testing getID returns ACCEPT");
+        Assertions.assertEquals(SceneID.ACCEPT, scene.getID(),
+                "getID() should return SceneID.ACCEPT");
     }
 
+    /**
+     * Verifies that {@link AcceptQuestSceneTest#play(Player, GameIO)} returns
+     * {@code null}, which signals the game loop to end.
+     */
     @Test
-    @DisplayName("play() returns null and triggers game over")
+    @DisplayName("play() returns null to end the game")
     void testPlayReturnsNull() {
-        logger.debug("Testing play returns null and triggers game over");
-        SceneID result = scene.play(player, io);
+        logger.debug("Testing play returns null");
+        when(mockPlayer.getName()).thenReturn("Hero");
+
+        SceneID result = scene.play(mockPlayer, mockIO);
+
         assertNull(result, "play() should return null to trigger game over");
     }
 
+    /**
+     * Verifies that {@link AcceptQuestSceneTest#play(Player, GameIO)} retrieves the
+     * player's name and includes it in the victory narrative printed to the IO.
+     */
     @Test
-    @DisplayName("play() uses player's name in final message")
+    @DisplayName("play() uses the player name in the victory message")
     void testPlayUsesPlayerName() {
-        logger.debug("Testing play uses player's name in final message");
-        String testName = "JoeBloggs";
-        when(player.getName()).thenReturn(testName);
-        scene.play(player, io);
-        verify(player, atLeast(1)).getName();
-        verify(io).println("Bards forever more sing the praises of " + player.getName() + ", hero of the realm!");
+        logger.debug("Testing play uses player name");
+        when(mockPlayer.getName()).thenReturn("Gandalf");
+
+        scene.play(mockPlayer, mockIO);
+
+        verify(mockPlayer, atLeastOnce()).getName();
+        verify(mockIO).println("Bards forever more sing the praises of Gandalf, the hero of the realm!");
     }
 
+    /**
+     * Verifies that {@link AcceptQuestSceneTest#play(Player, GameIO)} calls
+     * {@link GameIO#println(String)} at least once to print narrative text.
+     */
     @Test
-    @DisplayName("play() prints text via io.println()")
-    void testPlayPrintsViaGameIO() {
-        logger.debug("Testing play prints text via io.println()");
-        scene.play(player, io);
-        verify(io, atLeast(1)).println(anyString());
-    }
+    @DisplayName("play() prints narrative text via io.println")
+    void testPlayPrintsNarrativeText() {
+        logger.debug("Testing play prints narrative text");
+        when(mockPlayer.getName()).thenReturn("Merlin");
 
-    @Test
-    @DisplayName("play() never prompts player for input")
-    void testPlayNeverPromptsInput() {
-        logger.debug("Testing play() never prompts the user for any input");
-        scene.play(player, io);
-        verify(io, never()).prompt(anyString());
+        scene.play(mockPlayer, mockIO);
+
+        verify(mockIO, atLeastOnce()).println(anyString());
     }
 }

@@ -1,46 +1,48 @@
 package com.intro.scene;
 
 /**
- * Class to store unique identifiers for each scene. Scene IDs should only need to be changed here.
+ * Enumeration of every scene identifier in the game.
  */
 public enum SceneID {
     /**
-     * Scene where Player chooses character name.
+     * SceneID for player setup scene.
      */
     PLAYER_SETUP,
 
     /**
-     * Scene that describes forest and mysterious figure.
-     * Gives decision tree: friendly or threatening approach.
+     * SceneID for forest description scene. First main scene of the game, also
+     * accessed through the {@code flight} response of the {@link SceneID#CROWS}
+     * scene.
      */
     FOREST,
 
     /**
-     * Scene accessed through the friendly approach.
-     * Mysterious figure gives quest for amulet.
-     * Gives decision tree: accept or refuse.
+     * SceneID for scene accessed through {@code friendly} approach of the
+     * {@link SceneID#FOREST} scene.
      */
     QUEST,
 
     /**
-     * Scene accessed through threatening approach.
-     * Mysterious figure summons a murder of crows.
-     * Gives decision tree: fight or flight.
+     * SceneID for scene accessed through {@code threaten} approach of the
+     * {@link SceneID#FOREST} scene.
      */
     CROWS,
 
     /**
-     * Ending scene accessed by accepting quest for amulet.
+     * SceneID for accept quest scene. Accessed through {@code accept} approach
+     * of the {@link SceneID#QUEST} scene.
      */
     ACCEPT,
 
     /**
-     * Ending scene accessed by refusing quest for amulet.
+     * SceneID for refuse quest scene. Accessed through {@code refuse} approach
+     * of the {@link SceneID#QUEST} scene.
      */
     REFUSE,
 
     /**
-     * Ending scene accessed by choosing to fight.
+     * SceneID for fight scene. Accessed through {@code fight} approach of the
+     * {@link SceneID#CROWS} scene.
      */
-    FIGHT
+    FIGHT;
 }

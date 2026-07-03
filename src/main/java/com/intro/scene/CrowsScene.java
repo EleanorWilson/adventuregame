@@ -1,15 +1,16 @@
 package com.intro.scene;
 
-import com.intro.io.GameIO;
 import com.intro.model.Player;
+import com.intro.io.GameIO;
 
 /**
- * This scene is accessed through the {@code threaten} option of the
+ * This scene is accessed through the {@code threatens} option of the
  * {@link SceneID#FOREST} scene.
  * <p>
  *     The mysterious figure summons a murder of crows and readies to attack the
- *     player. The player is given two choices: {@code Fight} or {@code Flight},
- *     leading to one of two endings on the {@code threaten} branch of the story.
+ *     player. The player is give two choices: {@code fight} or {@code flight},
+ *     leading to one of the two endings on the {@code threatens} branch of the
+ *     story.
  * </p>
  */
 public class CrowsScene implements Scene {
@@ -26,16 +27,14 @@ public class CrowsScene implements Scene {
     /**
      * {@inheritDoc}
      * <p>
-     *     Prints the crows scene. Decision prompt then loops until the player
-     *     chooses a valid option:
+     *     Prints the crows scene. Decision prompt then loops until player chooses
+     *     a valid option:
      *     <ul>
      *         <li>{@code 1} or {@code fight} returns {@link SceneID#FIGHT}</li>
-     *         <li>{@code 2} or {@code flight} returns {@link SceneID#FOREST}
+     *         <li>{@code 2} or {@code flight} returns {@link SceneID#FOREST}</li>
      *         <ul><li>Loops back to an earlier scene.</li></ul>
-     *         </li>
      *     </ul>
      * </p>
-     *
      * @param player current player
      * @param io the {@link GameIO}
      * @return {@link SceneID#FIGHT} or {@link SceneID#FOREST}
@@ -43,7 +42,7 @@ public class CrowsScene implements Scene {
     @Override
     public SceneID play(Player player, GameIO io) {
         io.println();
-        io.println("You step forward aggressively and take a fighting stance, holding your sword out before you.");
+        io.println("You step forward aggressively and take a fighting stance, holding your sword out in front of you.");
         io.println();
         io.println("The mysterious figure takes a panicked step back before summoning a murder of crows from their dark robes who swirl above the figure, ready to attack.");
         io.println();
@@ -53,7 +52,7 @@ public class CrowsScene implements Scene {
         io.println("    1. Fight");
         io.println("    2. Flight");
 
-        while (true) {
+        while(true) {
             String choice = io.prompt("Your choice: ").toLowerCase();
             if (choice.isEmpty()) {
                 io.println("You have entered an invalid response, please enter 1 or 2.");

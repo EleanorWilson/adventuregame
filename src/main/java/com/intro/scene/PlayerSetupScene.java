@@ -1,14 +1,13 @@
 package com.intro.scene;
 
-import com.intro.model.Player;
 import com.intro.io.GameIO;
+import com.intro.model.Player;
 
 /**
  * Opening scene of the game, allows player to choose their character's name.
  * <p>
- *     Prompts player to choose a name, displays name to player, allows the
- *     player to change the name. If player satisfied with choice, transitions to
- *     {@link SceneID#FOREST}.
+ *     Prompts player to choose a name, displays name to player, allows the player to
+ *     change the name. If player satisfied with choice, transitions to {@link SceneID#FOREST}.
  * </p>
  * <p>
  *     A blank or whitespace-only name is rejected with a prompt to enter a valid name.
@@ -28,7 +27,7 @@ public class PlayerSetupScene implements Scene {
     /**
      * {@inheritDoc}
      * <p>
-     *     Loops until the Player has decided on their character's name. Player prompted to enter
+     *     Loops until the player has decided on their character's name. Player prompted to enter
      *     a name, the name is stored on the {@code player} object and displayed for the player.
      *     Blank or whitespace-only names are rejected. Player then prompted to decide between
      *     two options:
@@ -39,13 +38,13 @@ public class PlayerSetupScene implements Scene {
      * </p>
      * @param player current player
      * @param io the {@link GameIO}
-     * @return {@link SceneID#FOREST} once player has chosen their name.
+     * @return {@link SceneID#FOREST} once player had chosen their name.
      */
     @Override
     public SceneID play(Player player, GameIO io) {
         while (true) {
             String name = io.prompt("Enter your character name: ");
-            if (name == null || name.isBlank()){
+            if (name == null || name.isBlank()) {
                 io.println("Name cannot be blank. Please enter a valid name.");
                 continue;
             }
@@ -58,10 +57,11 @@ public class PlayerSetupScene implements Scene {
                 } else if (answer.charAt(0) == 'y' || answer.charAt(0) == '1') {
                     break;
                 } else if (answer.charAt(0) == 'n' || answer.charAt(0) == '2') {
+                    io.clearOutput();
                     io.println();
-                    io.println("******************************************************");
+                    io.println("*******************************************************");
                     io.println("                THE ENCHANTED FOREST");
-                    io.println("******************************************************");
+                    io.println("*******************************************************");
                     return SceneID.FOREST;
                 } else {
                     io.println("You have entered an invalid response, please try again.");

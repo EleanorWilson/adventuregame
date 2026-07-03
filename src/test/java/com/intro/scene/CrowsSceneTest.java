@@ -13,92 +13,184 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.contains;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
+/**
+ * Unit tests for {@link CrowsScene}.
+ *
+ * <h3>Parameterization strategy</h3>
+ * <p>
+ *     {@link CrowsScene} accepts multiple synonymous inputs for each of its two
+ *     decision paths:
+ * </p>
+ * <ul>
+ *     <li><strong>Fight path</strong> — recognised inputs: {@code "1"}, {@code "fight"}</li>
+ *     <li><strong>Flight path</strong> — recognised inputs: {@code "2"}, {@code "flight"}, {@code "flee"}</li>
+ * </ul>
+ * <p>
+ *     The original design had one {@code @Test} method per input (five methods total).
+ *     Each was structurally identical — stub a single prompt return value, call
+ *     {@code play()}, assert the expected {@link SceneID}.  This is a textbook case for
+ *     {@link ParameterizedTest @ParameterizedTest} with
+ *     {@link ValueSource @ValueSource(strings = {...})}: one method per decision path,
+ *     one invocation per recognised input.  Removing the duplication means that adding
+ *     a new synonym (e.g. {@code "attack"}) requires changing only the {@code @ValueSource}
+ *     annotation, not writing a whole new method.
+ * </p>
+ */
 @ExtendWith(MockitoExtension.class)
 class CrowsSceneTest {
 
     private static final Logger logger = LogManager.getLogger(CrowsSceneTest.class);
 
+    /** Mock {@link GameIO} injected by Mockito. */
     @Mock
-    private GameIO io;
+    private GameIO mockIO;
 
+    /** Mock {@link Player} injected by Mockito. */
     @Mock
-    private Player player;
+    private Player mockPlayer;
 
+    /** The scene under test, recreated before every test invocation. */
     private CrowsScene scene;
 
+    /**
+     * Creates a fresh {@link CrowsScene} before each test (including each
+     * {@code @ParameterizedTest} invocation).
+     */
     @BeforeEach
     void setUp() {
         logger.debug("Setting up CrowsSceneTest");
         scene = new CrowsScene();
     }
 
-    @Test
-    @DisplayName("getID() returns correct enum")
-    void testGetIDReturnsEnum() {
-        logger.debug("Testing getID() returns correct enum");
-        assertEquals(SceneID.CROWS, scene.getID(), "getID() should return SceneID.CROWS");
-    }
+    // -------------------------------------------------------------------------
+    // getID
+    // -------------------------------------------------------------------------
 
     /**
-     * Testing FIGHT path works as intended.
-     * @param input valid inputs that lead to SceneID.FIGHT, from {@code @ValueSource}
+     * Verifies that {@link CrowsScene#getID()} returns {@link SceneID#CROWS}.
      */
-    @ParameterizedTest(name="input ''{0}'' returns FIGHT")
+    @Test
+    @DisplayName("getID() returns SceneID.CROWS")
+    void testGetIDReturnsCrows() {
+        logger.debug("Testing getID returns CROWS");
+        assertEquals(SceneID.CROWS, scene.getID(),
+                "getID() should return SceneID.CROWS");
+    }
+
+    // -------------------------------------------------------------------------
+    // Valid input — fight path
+    // -------------------------------------------------------------------------
+
+    /**
+     * Verifies that every recognised "fight" input returns {@link SceneID#FIGHT}.
+     *
+     * <p>
+     *     Inputs under test: {@code "1"} (numeric choice) and {@code "fight"} (keyword).
+     *     Each is supplied as a separate JUnit 5 test invocation via
+     *     {@link ValueSource @ValueSource(strings = {...})}.
+     * </p>
+     *
+     * @param input a recognised fight-path input string, injected by JUnit 5.
+     */
+    @ParameterizedTest(name = "input ''{0}'' routes to FIGHT")
     @ValueSource(strings = {"1", "fight"})
-    // @DisplayName("play() returns FIGHT with \"1\" or \"fight\" input")
+    @DisplayName("play() returns FIGHT for each recognised fight-path input")
     void testPlayFightPath(String input) {
-        logger.debug("Testing fight path with input: {}", input);
-        when(io.prompt(anyString())).thenReturn(input);
-        SceneID result = scene.play(player, io);
-        assertEquals(SceneID.FIGHT, result, "Input: " + input + "should return SceneID.FIGHT");
+        logger.debug("Testing fight path with input: '{}'", input);
+        when(mockIO.prompt(anyString())).thenReturn(input);
+
+        SceneID result = scene.play(mockPlayer, mockIO);
+
+        assertEquals(SceneID.FIGHT, result,
+                "Input '" + input + "' should lead to SceneID.FIGHT");
+    }
+
+    // -------------------------------------------------------------------------
+    // Valid input — flight path
+    // -------------------------------------------------------------------------
+
+    /**
+     * Verifies that every recognised "flight" input returns {@link SceneID#FOREST}.
+     *
+     * <p>
+     *     Inputs under test: {@code "2"} (numeric choice), {@code "flight"} and
+     *     {@code "flee"} (keyword synonyms).  Each is a separate invocation via
+     *     {@link ValueSource @ValueSource(strings = {...})}.
+     * </p>
+     *
+     * @param input a recognised flight-path input string, injected by JUnit 5.
+     */
+    @ParameterizedTest(name = "input ''{0}'' routes back to FOREST")
+    @ValueSource(strings = {"2", "flight", "flee"})
+    @DisplayName("play() returns FOREST for each recognised flight-path input")
+    void testPlayFlightPath(String input) {
+        logger.debug("Testing flight path with input: '{}'", input);
+        when(mockIO.prompt(anyString())).thenReturn(input);
+
+        SceneID result = scene.play(mockPlayer, mockIO);
+
+        assertEquals(SceneID.FOREST, result,
+                "Input '" + input + "' should lead back to SceneID.FOREST");
+    }
+
+    // -------------------------------------------------------------------------
+    // Invalid / empty input validation
+    // -------------------------------------------------------------------------
+
+    /**
+     * Verifies that a completely invalid input causes the scene to print an error
+     * message and re-prompt, eventually resolving on the next valid entry.
+     */
+    @Test
+    @DisplayName("play() prints error and re-prompts on unrecognised input")
+    void testPlayInvalidThenValidInput() {
+        logger.debug("Testing play loops on invalid input then resolves");
+        when(mockIO.prompt(anyString())).thenReturn("invalid", "1");
+
+        SceneID result = scene.play(mockPlayer, mockIO);
+
+        assertEquals(SceneID.FIGHT, result,
+                "Should return FIGHT after recovering from an invalid response");
+        verify(mockIO).println("You have entered an invalid response, please enter 1 or 2.");
     }
 
     /**
-     * Testing FOREST (flight) path works as intended.
-     * @param input valid inputs that lead to SceneID.FOREST, from {@code @ValueSource}
+     * Verifies that an empty string input causes the scene to print an error and
+     * re-prompt, eventually resolving on the next valid entry.
      */
-    @ParameterizedTest(name="input ''{0}'' returns FOREST")
-    @ValueSource(strings = {"2", "flight", "flee"})
-    void testPlayFlightPath(String input) {
-        logger.debug("Testing flight path with input: {}", input);
-        when(io.prompt(anyString())).thenReturn(input);
-        SceneID result = scene.play(player, io);
-        assertEquals(SceneID.FOREST, result, "input: " + input + "should return SceneID.FOREST");
-    }
-
-    @Test
-    @DisplayName("play() prints error and re-prompts on invalid input")
-    void testPlayInvalidInputReprompt() {
-        logger.debug("Testing play() shows error message on invalid input, then reprompts & accepts valid input");
-        when(io.prompt(anyString())).thenReturn("invalid", "1");
-        SceneID result = scene.play(player, io);
-        verify(io).println(contains("invalid response"));
-        assertEquals(SceneID.FIGHT, result, "Should return fight on '1' input after reprompt");
-    }
-
     @Test
     @DisplayName("play() prints error and re-prompts on empty input")
-    void testPlayEmptyInputReprompt() {
-        logger.debug("Testing play() shows error message on empty input, then reprompts & accepts valid input");
-        when(io.prompt(anyString())).thenReturn("", "1");
-        SceneID result = scene.play(player, io);
-        verify(io).println(contains("invalid response"));
-        assertEquals(SceneID.FIGHT, result, "Should return fight on '1' input after reprompt");
+    void testPlayEmptyThenValidInput() {
+        logger.debug("Testing play loops on empty input");
+        when(mockIO.prompt(anyString())).thenReturn("", "2");
+
+        SceneID result = scene.play(mockPlayer, mockIO);
+
+        assertEquals(SceneID.FOREST, result,
+                "Should return FOREST after recovering from an empty response");
+        verify(mockIO).println("You have entered an invalid response, please enter 1 or 2.");
     }
 
+    // -------------------------------------------------------------------------
+    // Flight-path confirmation message
+    // -------------------------------------------------------------------------
+
+    /**
+     * Verifies that choosing the flight path prints a confirmation message to the
+     * player before returning to the forest.
+     */
     @Test
-    @DisplayName("play() prints flee message before returning FOREST")
-    void testPlayPrintsFleeMessage() {
-        logger.debug("Testing play() shows flee message before returning SceneID.FOREST when flight path chosen");
-        when(io.prompt(anyString())).thenReturn("2");
-        SceneID result = scene.play(player, io);
-        verify(io).println(contains("You choose to flee"));
-        assertEquals(SceneID.FOREST, result, "Should return forest on '2' input");
+    @DisplayName("play() prints a confirmation message when player flees")
+    void testPlayFlightPrintsConfirmationMessage() {
+        logger.debug("Testing play prints flight confirmation message");
+        when(mockIO.prompt(anyString())).thenReturn("2");
+
+        scene.play(mockPlayer, mockIO);
+
+        verify(mockIO).println("You choose to flee and race back into the forest, wiser now than before.");
     }
 }

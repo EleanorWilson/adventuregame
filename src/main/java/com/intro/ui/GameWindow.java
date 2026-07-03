@@ -1,164 +1,236 @@
 package com.intro.ui;
 
-import javafx.stage.StageStyle;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import javafx.application.Platform;
+import com.intro.config.GameConfig;
+import com.intro.engine.GameEngine;
+import com.intro.io.GuiIO;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import com.intro.config.GameConfig;
-import com.intro.engine.GameEngine;
-import com.intro.io.GuiIO;
-
-import java.util.ResourceBundle;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.ResourceBundle;
 
 /**
- * JavaFX {@link Application} point for the game.
+ * Top-level JavaFX {@link Application} entry point for the game.
+ *
  * <p>
- *     Loads the {@code GamePanel.fxml} with UI properties resolved from the
- *     {@code messages.properties} file using {@link ResourceBundle}. The {@link GamePanel}
- *     controller is linked with the {@link Stage} and {@link WindowControls}. The window
- *     dimensions are configured with {@link GameConfig} and the game engine is started on a
- *     separate {@code daemon} thread.
+ *     Loads {@code GamePanel.fxml} with UI strings resolved from
+ *     {@code messages.properties} via a {@link ResourceBundle}, wires the
+ *     {@link GamePanel} controller with its {@link Stage} and
+ *     {@link WindowControls} dependencies, configures the OS window using
+ *     dimensions from {@link GameConfig}, and starts the game engine on a
+ *     background daemon thread.
  * </p>
+ *
  * <p>
- *     The {@link Stage} uses {@link StageStyle#UNDECORATED} to replace the default title bar
- *     with a custom bar, the properties of which are defined in {@code GamePanel.fxml}, which
- *     matches the style of the main window, defined in {@code game.css}. The window controls
- *     ({@code toggle maximise}, {@code minimise} and {@code close}) are abstracted with the
- *     {@link WindowControls} interface.
+ *     The {@link Stage} uses {@link StageStyle#UNDECORATED} to remove the
+ *     native OS title bar, which is replaced by the custom title bar defined in
+ *     {@code GamePanel.fxml}. Window-control operations (minimise, maximise,
+ *     close) are exposed through the {@link WindowControls} interface so that
+ *     {@link GamePanel}'s handlers can be unit-tested without a running JavaFX
+ *     platform.
  * </p>
+ *
  * <p>
- *     This class also loads all fonts found within the resources folder ({@code com/intro/ui/fonts/*})
- *     via {@link #loadFonts()} before {@link #start(Stage)}, {@code GamePanel.fxml} and the
- *     {@code game.css} stylesheet are loaded/applied.
+ *     <strong>Font loading:</strong> bundled TrueType fonts are registered
+ *     with the JavaFX font system via {@link #loadFonts()} at the very start
+ *     of {@link #start(Stage)}, before the FXML is loaded and before the
+ *     stylesheet is applied. This guarantees that any {@code -fx-font-family}
+ *     name in {@code game.css} resolves to the bundled font rather than a
+ *     system fallback.
+ * </p>
+ *
+ * <p>
+ *     <strong>Edge-drag resizing:</strong> because {@code StageStyle.UNDECORATED}
+ *     removes the OS-native resize grips along with the title bar,
+ *     {@link WindowResizeHandler#attach(javafx.scene.Node, Stage, double, double)}
+ *     is called on the loaded root node to re-implement edge/corner drag
+ *     resizing, clamped to the same minimum dimensions applied to the stage
+ *     in {@link #configureStage(Stage, Scene, ResourceBundle)}.
  * </p>
  */
-@SuppressWarnings("java:S1075")
 public class GameWindow extends Application {
 
     private static final Logger logger = LogManager.getLogger(GameWindow.class);
 
     /**
-     * Path of bundled font files. Fonts must be added to {@code src/main/resources} so that
+     * Classpath root for all bundled font files.
+     * Fonts must live at this path inside {@code src/main/resources} so that
      * Maven packages them into the JAR.
      */
-    private static final String FONTS_PATH = "/com/intro/ui/fonts";
+    private static final String FONTS_PATH = "/com/intro/ui/fonts/";
 
     /**
-     * Called by the JavaFX Application Thread after {@link #main(String[])} invokes
-     * {@link javafx.application.Application#launch(String...)}. Loads fonts first, then
-     * FXML with {@code messages.properties} strings resolved, builds app and starts the game
-     * engine thread.
+     * Called by the JavaFX runtime on the JavaFX Application Thread after
+     * {@link #main(String[])} invokes {@link Application#launch}. Loads
+     * bundled fonts first, then loads the FXML with {@code messages.properties}
+     * strings resolved, wires all components, builds the scene from
+     * config-driven dimensions, and starts the game engine thread.
+     *
      * <p>
-     *     Font loading must come before {@link #applyStylesheet(Scene)} so that JavaFX already
-     *     has access to fonts when CSS is loaded.
+     *     Font loading ({@link #loadFonts()}) must happen before
+     *     {@link #applyStylesheet(Scene)} so that the JavaFX font registry
+     *     already contains the bundled families when the CSS engine first
+     *     evaluates the {@code -fx-font-family} rules.
      * </p>
-     * @param stage the primary stage
-     * @throws IOException if {@code GamePanel.fxml} cannot be loaded from the path.
+     *
+     * @param stage the primary stage provided by the JavaFX runtime.
+     * @throws IOException if {@code GamePanel.fxml} cannot be loaded from the
+     *                     classpath.
      */
     @Override
     public void start(Stage stage) throws IOException {
-        logger.info("GameWindow.start() loading resources and building UI");
+        logger.info("GameWindow.start() — loading resources and building UI");
+
+        /*
+         * Fonts must be registered before the stylesheet is applied.
+         * If a font fails to load, applyStylesheet() will still run and
+         * the CSS fallback chain (e.g. serif / monospace) takes over.
+         */
         loadFonts();
+
         ResourceBundle messages = ResourceBundle.getBundle("com.intro.ui.messages");
-        logger.debug("Loaded messages resource bundle ({} keys(s))", messages.keySet().size());
-        FXMLLoader loader = new FXMLLoader(this.getClass().getResource("/com/intro/ui/GamePanel.fxml"), messages);
+        logger.debug("Loaded messages resource bundle ({} key(s))", messages.keySet().size());
+
+        FXMLLoader loader = new FXMLLoader(
+                getClass().getResource("/com/intro/ui/GamePanel.fxml"),
+                messages);
         Parent root = loader.load();
         GamePanel controller = loader.getController();
 
         controller.setStage(stage);
-        controller.setWindowControls(this.buildWindowControls(stage));
+        controller.setWindowControls(buildWindowControls(stage));
 
         GuiIO guiIO = new GuiIO(controller);
 
-        double width = GameConfig.getDouble("ui.window.default.width", 900);
+        double width  = GameConfig.getDouble("ui.window.default.width",  900);
         double height = GameConfig.getDouble("ui.window.default.height", 620);
         Scene scene = new Scene(root, width, height);
-        this.applyStylesheet(scene);
+        applyStylesheet(scene);
 
-        double minWidth = GameConfig.getDouble("ui.window.min.width", 600);
-        double minHeight = GameConfig.getDouble("ui.window.min.height", 400);
+        double minWidth  = GameConfig.getDouble("ui.window.min.width",   600);
+        double minHeight = GameConfig.getDouble("ui.window.min.height",  400);
         WindowResizeHandler.attach(root, stage, minWidth, minHeight);
 
-        this.configureStage(stage, scene, messages);
+        configureStage(stage, scene, messages);
         stage.show();
         logger.info("GameWindow visible ({}x{})", (int) width, (int) height);
 
-        this.startGameThread(guiIO);
+        startGameThread(guiIO);
     }
 
     /**
-     * JavaFX entry point.
-     * @param args not used by this application.
+     * Standard JavaFX entry point; delegates to {@link Application#launch}.
+     *
+     * @param args forwarded to the JavaFX launcher; not used by this application.
      */
     public static void main(String[] args) {
-        logger.info("GameWindow.main() launching application");
+        logger.info("GameWindow.main() — launching JavaFX application");
         launch(args);
     }
 
+    // -------------------------------------------------------------------------
+    // Private helpers
+    // -------------------------------------------------------------------------
+
     /**
-     * Loads all font resources with JavaFX font system. Must be called before the CSS is
-     * applied otherwise default fonts are used.
+     * Registers all bundled TrueType fonts with the JavaFX font system.
+     *
      * <p>
-     *     To add a new font: place the {@code *.ttf} file inside the
-     *     {@code src/main/resources/com/intro/ui/fonts} folder and add a {@link #loadFont(String, String)}
-     *     call here in this method.
-     *     <ul><li>N.B. The second argument, the font family name, must match the internal font family
-     *     name found in the metadata of the {@code *.ttf} file.</li></ul>
+     *     This method must be called before the scene's stylesheet is applied
+     *     (i.e., before {@link #applyStylesheet(Scene)}). JavaFX resolves
+     *     {@code -fx-font-family} names at the moment the CSS is first
+     *     evaluated; if the font has not yet been registered, the rule silently
+     *     falls back to the next family in the {@code -fx-font-family} chain.
+     * </p>
+     *
+     * <p>
+     *     To add a new font: place the {@code .ttf} file in
+     *     {@code src/main/resources/com/intro/ui/fonts/} and add a
+     *     {@link #loadFont(String, String)} call here. The second argument must
+     *     be the font's internal family name (visible in the TTF metadata), not
+     *     the filename.
+     * </p>
+     *
+     * <p>
+     *     Not unit-tested: this method calls {@link Font#loadFont(InputStream, double)},
+     *     a JavaFX API that requires an initialised platform. It is exercised by
+     *     the application's manual startup path.
      * </p>
      */
     private static void loadFonts() {
+        /*
+         * Metamorphous — decorative serif font used for the window title label.
+         * Internal family name: "Metamorphous"
+         */
         loadFont(FONTS_PATH + "Metamorphous-Regular.ttf", "Metamorphous");
-        loadFont(FONTS_PATH + "GoogleSansCode-Regular.ttf", "Google Sans Code Regular");
+
+        /*
+         * Google Sans Code — clean monospaced font used for narrative text,
+         * the input field, and the submit button.
+         * Internal family name: "Google Sans Code"
+         */
+        loadFont(FONTS_PATH + "GoogleSansCode-Regular.ttf", "Google Sans Code");
     }
 
     /**
-     * Loads a single {@code *.ttf} (true type) font from the path and registers it with the JavaFX
-     * font system.
+     * Loads a single TrueType font from the classpath and registers it with
+     * the JavaFX font system.
+     *
      * <p>
-     *     The {@code familyName} parameter is only used for logging, it must match the font's internal
-     *     family name (as embedded in the TTF metadata) for the CSS {@code -fx-font-family} to resolve
-     *     correctly.
-     *     <blockquote>
-     *         <b>N.B.</b> If the font is not loading correctly, inspect the font's internal
-     *         name and update in the stylesheet.
-     *     </blockquote>
+     *     The {@code familyName} parameter is used only for logging — it must
+     *     match the font's internal family name (as embedded in the TTF
+     *     metadata) for the CSS {@code -fx-font-family} rule to resolve
+     *     correctly, but this method does not validate that match. Use a tool
+     *     such as <a href="https://fontdrop.info">fontdrop.info</a> to inspect
+     *     a font's internal name if styles are not applying at runtime.
      * </p>
-     * @param resourcePath the classpath to the {@code *.ttf} file.
-     * @param familyName the font's internal family name, used for log messages.
+     *
+     * <p>
+     *     If the resource is not found or the stream cannot be read, a warning
+     *     is logged and the method returns without throwing, allowing the rest
+     *     of startup to continue with CSS fallback fonts.
+     * </p>
+     *
+     * @param resourcePath classpath path to the {@code .ttf} file, e.g.
+     *                     {@code "/com/intro/ui/fonts/Metamorphous-Regular.ttf"}.
+     * @param familyName   the font's internal family name, used for log messages.
      */
     private static void loadFont(String resourcePath, String familyName) {
         try (InputStream stream = GameWindow.class.getResourceAsStream(resourcePath)) {
             if (stream == null) {
-                logger.warn("Font '{}' not found on the classpath at '{}' - CSS will use fallback", familyName, resourcePath);
+                logger.warn("Font '{}' not found on classpath at '{}' — CSS will use fallback",
+                        familyName, resourcePath);
                 return;
             }
             Font font = Font.loadFont(stream, 14);
             if (font == null) {
-                logger.warn("Font.loadFont() return null for '{}', font may be corrupt", familyName);
+                logger.warn("Font.loadFont() returned null for '{}' — file may be corrupt",
+                        familyName);
             } else {
-                logger.warn("Registered font: {} from '{}'", familyName, resourcePath);
+                logger.debug("Registered font '{}' from '{}'", familyName, resourcePath);
             }
-        } catch (Exception e) {
-            logger.warn("Could not close font stream for '{}':", familyName, e);
+        } catch (IOException e) {
+            logger.warn("Could not close font stream for '{}': {}", familyName, e.getMessage());
         }
     }
 
     /**
-     * Returns a {@link WindowControls} implementation with a real {@link Stage} to keep stage separate
-     * from the {@link GamePanel} for testing purposes.
-     * @param stage the primary stage, must not be {@code null}.
-     * @return {@link WindowControls}
+     * Returns a {@link WindowControls} implementation backed by the real
+     * {@link Stage}. Keeps stage interaction out of {@link GamePanel} so that
+     * the window-control handlers can be tested with a mock.
+     *
+     * @param stage the primary stage; must not be {@code null}.
+     * @return a {@link WindowControls} delegating to {@code stage}.
      */
     private WindowControls buildWindowControls(Stage stage) {
         return new WindowControls() {
@@ -171,13 +243,13 @@ public class GameWindow extends Application {
             @Override
             public void toggleMaximise() {
                 boolean next = !stage.isMaximized();
-                logger.debug("WindowControls.toggleMaximise() -> {}", next);
+                logger.debug("WindowControls.toggleMaximise() → {}", next);
                 stage.setMaximized(next);
             }
 
             @Override
             public void close() {
-                logger.info("WindowControls.close() -> Platform.exit() and System.exit(0)");
+                logger.info("WindowControls.close() — Platform.exit() + System.exit(0)");
                 Platform.exit();
                 System.exit(0);
             }
@@ -185,58 +257,63 @@ public class GameWindow extends Application {
     }
 
     /**
-     * Applies the {@code game.css} stylesheet to the {@code scene}. Logs a warning if file not
-     * found on path before defaulting to JavaFX default styles.
-     * @param scene the scene to style
+     * Applies {@code game.css} to {@code scene}. Logs a warning and continues
+     * with default JavaFX styles if the file is not found on the classpath.
+     *
+     * @param scene the scene to style.
      */
     private void applyStylesheet(Scene scene) {
-        URL cssURL = this.getClass().getResource("/com/intro/ui/game.css");
-        if (cssURL != null) {
-            scene.getStylesheets().add(cssURL.toExternalForm());
-            logger.debug("Stylesheet applied: {}", cssURL);
+        URL cssUrl = getClass().getResource("/com/intro/ui/game.css");
+        if (cssUrl != null) {
+            scene.getStylesheets().add(cssUrl.toExternalForm());
+            logger.debug("Stylesheet applied: {}", cssUrl);
         } else {
-            logger.warn("game.css not found on path, using default JavaFX styles.");
+            logger.warn("game.css not found on classpath — using default JavaFX styles");
         }
     }
 
     /**
-     * Applies {@link StageStyle#UNDECORATED}, sets the taskbar title from {@code messages} and
-     * applies configurations from {@link GameConfig}.
-     * @param stage the stage to configure
-     * @param scene the scene to attach
-     * @param messages the bundle supplying the {@code ui.window.title} string
+     * Applies {@link StageStyle#UNDECORATED}, sets the taskbar title from the
+     * {@code messages} bundle, attaches the scene, enforces minimum dimensions
+     * from {@link GameConfig}, and registers a fallback close handler for OS
+     * shortcuts (e.g. Alt+F4).
+     *
+     * @param stage    the stage to configure.
+     * @param scene    the scene to attach.
+     * @param messages the bundle supplying the {@code ui.window.title} string.
      */
     private void configureStage(Stage stage, Scene scene, ResourceBundle messages) {
         stage.initStyle(StageStyle.UNDECORATED);
         stage.setTitle(messages.getString("ui.window.title"));
         stage.setScene(scene);
-        stage.setMinWidth(GameConfig.getDouble("ui.window.min.width", 600));
+        stage.setMinWidth(GameConfig.getDouble("ui.window.min.width",   600));
         stage.setMinHeight(GameConfig.getDouble("ui.window.min.height", 400));
         stage.setOnCloseRequest(event -> {
-            logger.info("OS close request received, shutting down with exit code: 0");
+            logger.info("OS close request received — shutting down (exit code 0)");
             Platform.exit();
             System.exit(0);
         });
     }
 
     /**
-     * Starts the game engine on a background daemon thread so it can block waiting for player
-     * input without freezing the JavaFX Application Thread, thus preventing UI freezes.
-     * @param guiIO the IO linked to the {@link GamePanel} controller
+     * Starts the game engine on a background daemon thread so it can block
+     * waiting for player input without freezing the JavaFX Application Thread.
+     *
+     * @param guiIO the IO bridge wired to the {@link GamePanel} controller.
      */
     private void startGameThread(GuiIO guiIO) {
         Thread gameThread = new Thread(() -> {
             logger.info("Game engine thread started");
             try {
-                 new GameEngine(guiIO).run();
-                 logger.info("Game engine finished normally");
+                new GameEngine(guiIO).run();
+                logger.info("Game engine finished normally");
             } catch (Exception e) {
-                logger.fatal("Unexpected fatal error in the game engine thread", e);
+                logger.fatal("Unexpected fatal error in game engine thread", e);
             }
         });
         gameThread.setName("game-engine-thread");
         gameThread.setDaemon(true);
         gameThread.start();
-        logger.debug("Game engine daemon thread launched.");
+        logger.debug("Game engine daemon thread launched");
     }
 }

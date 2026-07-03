@@ -1,33 +1,96 @@
 /*
-Pseudo classes for javafx nodes include:
-:hover - when mouse cursor is over the node
-:pressed - when button is held down
-:focused - when node has a keyboard focus (i.e. TAB onto node)
-:disabled - when node is disabled
+ * game.css — Visual theme for the Adventure Game GUI.
+ *
+ * Loaded at runtime by GameWindow.applyStylesheet(), which adds this file
+ * to the Scene's stylesheet list after GameWindow.loadFonts() has registered
+ * the bundled TrueType fonts with the JavaFX font system.
+ *
+ * Font loading order matters
+ * ──────────────────────────
+ * GameWindow.loadFonts() must run BEFORE this stylesheet is applied.
+ * JavaFX resolves -fx-font-family names at the moment the CSS is first
+ * evaluated. If a font family has not been registered yet, the rule silently
+ * falls back to the next entry in the font stack (e.g. "serif", "monospace").
+ *
+ * Bundled fonts
+ * ─────────────
+ * "Metamorphous"     — decorative serif, used for the window title label only.
+ *                      File: src/main/resources/com/intro/ui/fonts/Metamorphous-Regular.ttf
+ * "Google Sans Code" — clean monospaced font, used for all game text.
+ *                      File: src/main/resources/com/intro/ui/fonts/GoogleSansCode-Regular.ttf
+ *
+ * The internal family name (quoted above) is embedded in the TTF metadata and
+ * must match exactly what is written in -fx-font-family rules below. To verify
+ * a font's internal name, use https://fontdrop.info or a similar inspector.
+ *
+ * Style class mapping (set in GamePanel.fxml)
+ * ────────────────────────────────────────────
+ *   .title-bar             — custom title bar HBox (replaces native OS title bar)
+ *   .title-label           — window title Label  → Metamorphous
+ *   .title-button          — theme-toggle / minimise / maximise / close Buttons
+ *   .title-icon             — SVGPath graphic inside each .title-button
+ *   .theme-toggle-button   — applied additionally to the theme toggle Button
+ *   .close-button          — applied additionally to the close Button (red hover)
+ *   .narrative-area        — read-only story TextArea → Google Sans Code
+ *   .input-field           — player input TextField   → Google Sans Code
+ *   .submit-button         — Submit Button            → Google Sans Code
+ *   .input-bar             — bottom HBox containing input controls
+ *
+ * Light mode
+ * ──────────
+ * All rules above style the default (dark) theme. A parallel set of rules
+ * scoped under ".root.light-theme" near the end of this file overrides the
+ * palette for light mode. GamePanel.handleToggleTheme() adds or removes the
+ * "light-theme" style class on the root BorderPane (fx:id="rootPane"); no
+ * second stylesheet file is swapped in, so both palettes stay in one place
+ * and cannot drift out of sync structurally.
  */
+
+/* ---- Root / window background ------------------------------------------- */
+/*
+ * Sets the default font for every node that does not override -fx-font-family.
+ * "Google Sans Code" is registered at startup by GameWindow.loadFonts();
+ * "monospace" is the generic CSS fallback if the bundled font is unavailable.
+ */
+
 .root {
-    -fx-background-color: #191A1C;
-    -fx-font-family: "Google Sans Code Regular", monospace;
+    -fx-background-color: #1a1a2e;
+    -fx-font-family: "Google Sans Code", monospace;
 }
 
-/* ---------- TITLE BAR ---------- */
+/* ---- Custom title bar ---------------------------------------------------- */
+/*
+ * The native OS title bar is removed by StageStyle.UNDECORATED in GameWindow.
+ * This HBox replaces it. The bottom border line provides visual separation
+ * between the title bar and the narrative area.
+ */
 
 .title-bar {
-    -fx-background-color: #191A1C;
-    -fx-border-color: #863BBF;
+    -fx-background-color: #0f0f23;
+    -fx-border-color: #533483;
     -fx-border-width: 0 0 1 0;
     -fx-alignment: CENTER_LEFT;
     -fx-padding: 0 0 0 12;
     -fx-min-height: 34px;
 }
 
+/*
+ * Metamorphous is a decorative serif font suited to the title.
+ * "serif" is the generic fallback if the bundled font is unavailable.
+ */
 .title-label {
-    -fx-text-fill: #863BBF;
+    -fx-text-fill: #8080aa;
     -fx-font-family: "Metamorphous", serif;
     -fx-font-size: 13px;
     -fx-font-style: normal;
 }
 
+/*
+ * Window-control buttons hold an SVGPath graphic (see ".title-icon" below)
+ * instead of a text symbol, so no -fx-font-* rules are needed on the Button
+ * itself for icon rendering. The fixed width/height keeps all four buttons
+ * (theme toggle, minimise, maximise, close) the same size in the title bar.
+ */
 .title-button {
     -fx-background-color: transparent;
     -fx-min-width: 46px;
@@ -42,6 +105,11 @@ Pseudo classes for javafx nodes include:
     -fx-faint-focus-color: transparent;
 }
 
+/*
+ * The SVGPath icon inside every title-bar button. Source "d" path data is
+ * authored on a 24x24 viewBox; scaling it down to ~0.6 renders a crisp
+ * ~14px glyph that matches the size of the text symbols it replaces.
+ */
 .title-icon {
     -fx-fill: #8080aa;
     -fx-scale-x: 0.6;
@@ -49,7 +117,7 @@ Pseudo classes for javafx nodes include:
 }
 
 .title-button:hover {
-    -fx-background-color: #20327A;
+    -fx-background-color: #2a2a4a;
 }
 
 .title-button:hover .title-icon {
@@ -57,94 +125,107 @@ Pseudo classes for javafx nodes include:
 }
 
 .title-button:pressed {
-    -fx-background-color: #091959;
+    -fx-background-color: #1a1a38;
 }
 
+/*
+ * Close button override: red background on hover, matching the OS convention
+ * on Windows, macOS, and many Linux desktop environments.
+ */
 .close-button:hover {
-    -fx-background-color: #A10505;
+    -fx-background-color: #c0392b;
 }
 
-.close-button:hover .title-icon{
-    -fx-fill: #F7E1E1;
+.close-button:hover .title-icon {
+    -fx-fill: #ffffff;
 }
 
 .close-button:pressed {
-    -fx-background-color: #750707;
+    -fx-background-color: #922b21;
 }
 
 .close-button:pressed .title-icon {
-    -fx-fill: #F7E1E1;
+    -fx-fill: #ffffff;
 }
 
-/* ---------- OUTPUT ---------- */
-
+/* ---- Narrative text area ------------------------------------------------- */
+/*
+ * -fx-padding on both the TextArea and its inner ".content" region: the
+ * outer padding keeps the caret/selection area itself away from the control's
+ * edge, and the inner ".content" padding (the actual text-flow node inside
+ * the TextArea's internal ScrollPane) is what visually indents the wrapped
+ * story text, since JavaFX renders text flush against ".content" otherwise.
+ */
 .narrative-area {
-    -fx-background-color: #191A1C;
-    -fx-control-inner-background: #191A1C;
-    -fx-text-fill: #56A8F5FF;
-    -fx-font-family: "Google Sans Code Regular", monospace;
+    -fx-background-color: #1a1a2e;
+    -fx-control-inner-background: #1a1a2e;
+    -fx-text-fill: #d4d4d4;
+    -fx-font-family: "Google Sans Code", monospace;
     -fx-font-size: 14px;
     -fx-border-color: transparent;
     -fx-focus-color: transparent;
-    -fx-faint-focus-colour: transparent;
-    -fx-padding: 12px;
+    -fx-faint-focus-color: transparent;
+    -fx-padding: 12;
 }
 
+/* Remove the default blue focus ring from the TextArea scroll pane */
 .narrative-area .scroll-pane {
-    -fx-background-color: #191A1C;
+    -fx-background-color: #1a1a2e;
     -fx-border-color: transparent;
 }
 
 .narrative-area .content {
-    -fx-background-color: #191A1C;
-    -fx-padding: 5% 10%;
-    /* TODO test -fx-padding: 8 12 8 12; */
+    -fx-background-color: #1a1a2e;
+    -fx-padding: 8 60 8 60;
 }
 
+/* Scrollbar styling for the narrative area */
 .narrative-area .scroll-bar:vertical {
-    -fx-background-color: #330654;
+    -fx-background-color: #16213e;
 }
 
 .narrative-area .scroll-bar:vertical .thumb {
-    -fx-background-color: #4B0A7A;
+    -fx-background-color: #533483;
     -fx-background-radius: 4;
 }
 
-/* ---------- INPUT ---------- */
+/* ---- Bottom input bar container ----------------------------------------- */
 
 .input-bar {
-    -fx-background-color: #191A1C;
-    -fx-border-color: #4B0A7A;
+    -fx-background-color: #16213e;
+    -fx-border-color: #533483;
     -fx-border-width: 1 0 0 0;
 }
 
+/* ---- Player input text field -------------------------------------------- */
+
 .input-field {
-    -fx-background-color: #191A1C;
-    -fx-text-fill: #863BBF;
-    -fx-prompt-text-fill: #C7AFC9;
-    -fx-font-family: "Google Sans Code Regular", monospace;
+    -fx-background-color: #0f3460;
+    -fx-text-fill: #e0e0e0;
+    -fx-prompt-text-fill: #6a6a8a;
+    -fx-font-family: "Google Sans Code", monospace;
     -fx-font-size: 14px;
-    -fx-border-color: #330654;
+    -fx-border-color: #533483;
     -fx-border-radius: 4;
     -fx-background-radius: 4;
     -fx-padding: 6 10 6 10;
 }
 
 .input-field:focused {
-    -fx-border-color: #863BBF;
-    -fx-effect: dropshadow(gaussian, #4B0A7A, 6, 0.4, 0, 0);
+    -fx-border-color: #a78bfa;
+    -fx-effect: dropshadow(gaussian, #533483, 6, 0.4, 0, 0);
 }
 
 .input-field:disabled {
     -fx-opacity: 0.45;
 }
 
-/* ---------- SUBMIT ---------- */
+/* ---- Submit button ------------------------------------------------------- */
 
 .submit-button {
-    -fx-background-color: #195E0E;
-    -fx-text-fill: #DCEDDA;
-    -fx-font-family: "Google Sans Code Regular", monospace;
+    -fx-background-color: #533483;
+    -fx-text-fill: #ffffff;
+    -fx-font-family: "Google Sans Code", monospace;
     -fx-font-size: 14px;
     -fx-font-weight: bold;
     -fx-border-radius: 4;
@@ -154,12 +235,12 @@ Pseudo classes for javafx nodes include:
 }
 
 .submit-button:hover {
-    -fx-background-color: #2C991A;
-    -fx-effect: dropshadow(gaussian, #0F4006, 6, 0.4, 0, 0);
+    -fx-background-color: #6d45a8;
+    -fx-effect: dropshadow(gaussian, #533483, 8, 0.5, 0, 0);
 }
 
 .submit-button:pressed {
-    -fx-background-color: #0F4006;
+    -fx-background-color: #3b2466;
 }
 
 .submit-button:disabled {
@@ -167,22 +248,28 @@ Pseudo classes for javafx nodes include:
     -fx-cursor: default;
 }
 
-/* ------------------------------------------------------
- * LIGHT THEME SETTINGS
- * ------------------------------------------------------
+/* ═══════════════════════════════════════════════════════════════════════════
+ * LIGHT THEME
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Applied when GamePanel.handleToggleTheme() adds the "light-theme" style
+ * class to the root BorderPane (fx:id="rootPane"). Every selector below is
+ * scoped under ".root.light-theme" so the dark-mode rules above remain the
+ * default and these are pure overrides layered on top by CSS specificity
+ * (two classes on one compound selector outrank the single-class dark rules).
+ * Font families, sizes, paddings, and layout are unchanged — only colours.
  */
 
-root.light-theme {
-    -fx-background-color: #f4f4f4;
+.root.light-theme {
+    -fx-background-color: #f4f2f8;
 }
 
-root.light-theme .title-bar {
+.root.light-theme .title-bar {
     -fx-background-color: #e6e2f0;
     -fx-border-color: #b7a6d9;
 }
 
 .root.light-theme .title-label {
-    -fx-text-fill: #4b3b73
+    -fx-text-fill: #4b3b73;
 }
 
 .root.light-theme .title-icon {
@@ -190,7 +277,7 @@ root.light-theme .title-bar {
 }
 
 .root.light-theme .title-button:hover {
-    -fx-background-color: #d3c9e8
+    -fx-background-color: #d3c9e8;
 }
 
 .root.light-theme .title-button:hover .title-icon {
@@ -217,22 +304,22 @@ root.light-theme .title-bar {
     -fx-fill: #ffffff;
 }
 
-root.light-theme .narrative-area,
-root.light-theme .narrative-area .scroll-pane,
-root.light-theme .narrative-area .content {
-    -fx-background-color: #f5f2ed;
-    -fx-control-inner-background: #f5f2ed;
+.root.light-theme .narrative-area,
+.root.light-theme .narrative-area .scroll-pane,
+.root.light-theme .narrative-area .content {
+    -fx-background-color: #ffffff;
+    -fx-control-inner-background: #ffffff;
 }
 
 .root.light-theme .narrative-area {
-    -fx-text-fill: #2a0045
+    -fx-text-fill: #24202c;
 }
 
 .root.light-theme .narrative-area .scroll-bar:vertical {
     -fx-background-color: #e6e2f0;
 }
 
-.root.light-theme .narrative-area .scroll-bar:vertical .thumb{
+.root.light-theme .narrative-area .scroll-bar:vertical .thumb {
     -fx-background-color: #b7a6d9;
 }
 
@@ -254,17 +341,15 @@ root.light-theme .narrative-area .content {
 }
 
 .root.light-theme .submit-button {
-    -fx-background-color: #DCEDDA;
-    -fx-text-fill: #195E0E;
+    -fx-background-color: #6d45a8;
+    -fx-text-fill: #ffffff;
 }
 
 .root.light-theme .submit-button:hover {
-    -fx-background-color: #879c84;
-    -fx-effect: dropshadow(gaussian, #42693d, 6, 0.4, 0, 0);
-    -fx-text-fill: #0b3803;
+    -fx-background-color: #7d55b8;
+    -fx-effect: dropshadow(gaussian, #b7a6d9, 8, 0.5, 0, 0);
 }
 
 .root.light-theme .submit-button:pressed {
-    -fx-background-color: #42693d;
+    -fx-background-color: #543585;
 }
-

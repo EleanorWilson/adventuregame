@@ -4,15 +4,14 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.intro</groupId>
+    <groupId>org.intro</groupId>
     <artifactId>adventuregame</artifactId>
-    <version>1.00.00</version>
+    <version>00.00.01</version>
     <packaging>jar</packaging>
 
     <properties>
-        <argLine></argLine>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
+        <maven.compiler.source>25</maven.compiler.source>
+        <maven.compiler.target>25</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <log4j.api.version>2.25.4</log4j.api.version>
         <log4j.core.version>2.25.4</log4j.core.version>
@@ -20,13 +19,12 @@
         <mockito.junit.version>5.17.0</mockito.junit.version>
         <maven.surefire.plugin.version>3.2.5</maven.surefire.plugin.version>
         <maven.dependency.plugin.version>3.6.1</maven.dependency.plugin.version>
-        <jacocoPluginVersion>0.8.12</jacocoPluginVersion>
         <javafx.version>21.0.2</javafx.version>
         <javafx.maven.plugin.version>0.0.8</javafx.maven.plugin.version>
     </properties>
 
     <dependencies>
-        <!-- Logging -->
+        <!-- Logging (Log4j2) -->
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
@@ -39,25 +37,18 @@
         </dependency>
 
         <!-- Testing -->
-        <!-- JUnit -->
+        <!-- JUnit 5 -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <version>${junit.jupiter.version}</version>
             <scope>test</scope>
         </dependency>
-
-        <!-- Mockito -->
+        <!-- Mockito with JUnit 5 extension -->
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
             <version>${mockito.junit.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.13.2</version>
             <scope>test</scope>
         </dependency>
 
@@ -74,41 +65,6 @@
             <version>${javafx.version}</version>
         </dependency>
     </dependencies>
-
-    <profiles>
-        <profile>
-            <id>noCheck</id>
-            <properties>
-                <skipCheckstyle>true</skipCheckstyle>
-            </properties>
-        </profile>
-        <profile>
-            <id>coverage</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.jacoco</groupId>
-                        <artifactId>jacoco-maven-plugin</artifactId>
-                        <version>${jacocoPluginVersion}</version>
-                        <executions>
-                            <execution>
-                                <id>prepare-agent</id>
-                                <goals>
-                                    <goal>prepare-agent</goal>
-                                </goals>
-                            </execution>
-                            <execution>
-                                <id>report</id>
-                                <goals>
-                                    <goal>report</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 
     <build>
         <plugins>
@@ -132,13 +88,13 @@
                 <version>${maven.surefire.plugin.version}</version>
                 <configuration>
                     <!-- change to
-                    <argLine>${argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>
-                    when ready to add SonarQube or JaCoCo, etc -->
-                    <!--suppress UnresolvedMavenProperty -->
                     <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>
+                    when ready to add SonarQube plugin or JaCoCo, etc -->
+                    <!--suppress UnresolvedMavenProperty -->
+                    <argLine>-javaagent:${org.mockito:mockito-core:jar} -Dnet.bytebuddy.experimental=true</argLine>
                 </configuration>
             </plugin>
-            <!-- JavaFX Maven Plugin: run with `mvn clean javafx:run` -->
+            <!-- JavaFX Maven Plugin -->
             <plugin>
                 <groupId>org.openjfx</groupId>
                 <artifactId>javafx-maven-plugin</artifactId>

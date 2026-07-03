@@ -1,62 +1,93 @@
 package com.intro.ui;
 
 import com.intro.config.GameConfig;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import javafx.scene.Cursor;
 import javafx.scene.Node;
 import javafx.scene.input.MouseEvent;
 import javafx.stage.Stage;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
- * Enables resizing the {@link Stage} by dragging the edges or corners, since
- * {@link javafx.stage.StageStyle#UNDECORATED} removes the native resize options along the title bar.
- * <h2>Need for this class:</h2>
+ * Enables resizing the undecorated {@link Stage} by dragging its edges or
+ * corners, since {@link javafx.stage.StageStyle#UNDECORATED} (used by {@link GameWindow})
+ * removes the OS-native resize grips along with the title bar.
+ *
+ * <h2>Why this class exists</h2>
  * <p>
- *     JavaFX does not provide a built-in edge-resize behaviour for {@code UNDECORATED} stages which are
- *     otherwise normally supplied by the OS window manager. This class re-implements the standard behaviour:
- *     i.e. hovering near an edge should show a resize cursor, dragging from that edge should resize
- *     the stage.
+ *     JavaFX provides no built-in edge-resize behaviour for undecorated stages —
+ *     that is normally supplied by the operating system's window manager, which
+ *     {@code StageStyle.UNDECORATED} disables. This class re-implements the
+ *     standard behaviour: hovering near an edge shows a directional resize
+ *     cursor, and dragging from that edge resizes (and, for the top/left edges,
+ *     repositions) the stage.
  * </p>
- * <h2>Separating Logic from JavaFX</h2>
+ *
+ * <h2>Split between pure logic and JavaFX glue</h2>
  * <p>
- *     Logical methods are {@code static} for unit-testing purposes (they can be tested without running a
- *     JavaFX platform):
+ *     Two pieces of pure logic are exposed as {@code static} methods so they
+ *     can be unit-tested without a running JavaFX platform:
  * </p>
  * <ul>
  *     <li>
- *         {@link #resolveEdge(double, double, double, double, double)}: given a mouse position and the current
- *         size of the window, this method decides which edge or corner (if any) the cursor is close enough to
- *         for a resize gesture to begin.
+ *         {@link #resolveEdge(double, double, double, double, double)} — given
+ *         a mouse position and the target's current size, decides which edge
+ *         or corner (if any) the cursor is close enough to for a resize
+ *         gesture to begin.
  *     </li>
  *     <li>
- *         {@link #computeBounds(ResizeEdge, double, double, double, double, double, double, double, double)}:
- *         given the target edge, the bounds of the stage and how far the mouse has moved, this method calculates
- *         the new bounds (which are restricted by minimum height/width of the window).
+ *         {@link #computeBounds(ResizeEdge, double, double, double, double, double, double, double, double)} —
+ *         given the edge being dragged, the stage's bounds at the start of the
+ *         drag, and how far the mouse has moved, computes the new bounds,
+ *         clamped to a minimum width/height.
  *     </li>
  *     <li>
- *         {@link #cursorFor(ResizeEdge)} - this method displays the correct cursor type for edge dragging.
+ *         {@link #cursorFor(ResizeEdge)} — maps a resolved edge to the
+ *         appropriate {@link Cursor} for hover feedback.
  *     </li>
  * </ul>
  * <p>
- *     {@link Cursor} does not require {@link javafx.application.Platform} to be initialised so
- *     {@link #cursorFor(ResizeEdge)} can be unit tested directly.
- * </p>
- * <h2>Nested {@link  DragState} class</h2>
- * <p>
- *     Transient drag states (active edge, starting mouse position, starting stage bounds) live in a
- *     {@code private static} nested class. {@link DragState} is created once per
- *     {@link #attach(Node, Stage, double, double)} call and shared across the registered mouse handlers.
+ *     {@link Cursor} does not require {@link javafx.application.Platform} to be
+ *     initialised (it is a simple enum-like value holder), so
+ *     {@link #cursorFor(ResizeEdge)} is also directly unit-testable.
  * </p>
  * <p>
- *     {@link DragState} is intentionally nested, rather than separate because:
+ *     Everything else — attaching mouse listeners to a {@link Node} and
+ *     mutating a real {@link Stage} — is thin instance-level glue in
+ *     {@link #attach(Node, Stage, double, double)}. This mirrors the existing
+ *     convention in {@link GamePanel} for drag-to-move: the pixel-level event
+ *     wiring is not unit-tested (it requires a running JavaFX platform and a
+ *     real {@link Stage}), while the underlying arithmetic is fully tested in
+ *     {@code WindowResizeHandlerTest}.
+ * </p>
+ * <h2>Nested {@link DragState}</h2>
+ * <p>
+ *     Transient drag-session state (active edge, starting mouse position, starting
+ *     stage bounds) lives in a {@code private static} nested class rather than a
+ *     separate top-level type. {@link DragState} is created once per
+ *     {@link #attach(Node, Stage, double, double)} call and shared across the
+ *     registered mouse handlers via closure capture.
+ * </p>
+ * <p>
+ *     It is intentionally <em>not</em> extracted to its own file because:
  * </p>
  * <ul>
- *     <li>It is only used by  {@link #attach(Node, Stage, double, double)} and no other class needs it</li>
- *     <li>Its complex logic and calculations are performed by unit-tested methods like
- *     {@link #computeBounds(ResizeEdge, double, double, double, double, double, double, double, double)}
- *     so its internal logic is already indirectly verified.</li>
+ *     <li>it is an implementation detail of {@link #attach(Node, Stage, double, double)}
+ *         — no other class needs it;</li>
+ *     <li>keeping it {@code private} prevents other types from depending on
+ *         mutable session state that is not part of this class's public API;</li>
+ *     <li>its behaviour delegates to the unit-tested pure methods
+ *         ({@link #computeBounds(ResizeEdge, double, double, double, double, double, double, double, double)}),
+ *         so a separate type would not improve test coverage;</li>
+ *     <li>this matches the convention in {@link GamePanel}, where title-bar
+ *         drag offsets are private fields on the panel rather than a standalone
+ *         helper class.</li>
  * </ul>
+ * <p>
+ *     Extract {@link DragState} to a package-private top-level class only if it
+ *     becomes reusable across multiple handlers or grows substantial independent
+ *     behaviour (e.g. snap-to-grid, multi-monitor clamping).
+ * </p>
  *
  * @see DragState
  * @see #attach(Node, Stage, double, double)
@@ -64,39 +95,65 @@ import javafx.stage.Stage;
  * @see GamePanel
  * @see GameConfig
  */
+@SuppressWarnings("java:S107")
 public final class WindowResizeHandler {
 
     private static final Logger logger = LogManager.getLogger(WindowResizeHandler.class);
 
     /**
-     * Enums for edges and corners of the window, to identify which edges a resize gesture applies to.
-     * {@code NONE} means a cursor is not close enough to any edge.
+     * Identifies which edge(s) of the resize target a drag gesture applies to.
+     *
      * <p>
-     *     Cardinal values: {@link #N}, {@link #S}, {@link #W}, {@link #E} affect a single edge.
-     *     Diagonal values: {@link #NW}, {@link #NE}, {@link #SW}, {@link #SE} affect two edges
-     *     simultaneously.
+     *     Cardinal values ({@link #N}, {@link #S}, {@link #E}, {@link #W})
+     *     affect a single edge. Diagonal values ({@link #NE}, {@link #NW},
+     *     {@link #SE}, {@link #SW}) affect two edges simultaneously.
+     *     {@link #NONE} means the cursor is not close enough to any edge to
+     *     start a resize gesture.
      * </p>
+     *
      * @see #resolveEdge(double, double, double, double, double)
      * @see #computeBounds(ResizeEdge, double, double, double, double, double, double, double, double)
      * @see #cursorFor(ResizeEdge)
      */
     public enum ResizeEdge {
-         NONE, N, S, E, W, NE, NW, SE, SW;
+        /** No edge is within the resize margin; no resize gesture applies. */
+        NONE,
+        /** Top edge only. */
+        N,
+        /** Bottom edge only. */
+        S,
+        /** Right edge only. */
+        E,
+        /** Left edge only. */
+        W,
+        /** Top-right corner (top and right edges). */
+        NE,
+        /** Top-left corner (top and left edges). */
+        NW,
+        /** Bottom-left corner (bottom and left edges). */
+        SW,
+        /** Bottom-right corner (bottom and right edges). */
+        SE;
 
         /**
-         * Returns {@code true} if the edge includes the {@link #W} (left) side of the window.
-         * @return {@code true} for {@link #W}, {@link #NW}, {@link #SW}
+         * Returns {@code true} if this edge includes the west (left) side of
+         * the target, meaning a drag should adjust the stage's X position and
+         * width together.
+         *
+         * @return {@code true} for {@link #W}, {@link #NW}, and {@link #SW}.
          */
-         boolean affectsWest() {
-             return switch (this) {
-                 case W, NW, SW -> true;
-                 default -> false;
-             };
-         }
+        boolean affectsWest() {
+            return switch (this) {
+                case W, NW, SW -> true;
+                default -> false;
+            };
+        }
 
         /**
-         * Returns {@code true} if the edge includes the {@link #E} (right) side of the window.
-         * @return {@code true} for {@link #E}, {@link #NE}, {@link #SE}
+         * Returns {@code true} if this edge includes the east (right) side of
+         * the target, meaning a drag should adjust the stage width only.
+         *
+         * @return {@code true} for {@link #E}, {@link #NE}, and {@link #SE}.
          */
         boolean affectsEast() {
             return switch (this) {
@@ -106,8 +163,11 @@ public final class WindowResizeHandler {
         }
 
         /**
-         * Returns {@code true} if the edge includes the {@link #N} (top) side of the window.
-         * @return {@code true} for {@link #N}, {@link #NW}, {@link #NE}
+         * Returns {@code true} if this edge includes the north (top) side of
+         * the target, meaning a drag should adjust the stage's Y position and
+         * height together.
+         *
+         * @return {@code true} for {@link #N}, {@link #NW}, and {@link #NE}.
          */
         boolean affectsNorth() {
             return switch (this) {
@@ -117,8 +177,10 @@ public final class WindowResizeHandler {
         }
 
         /**
-         * Returns {@code true} if the edge includes the {@link #S} (left) side of the window.
-         * @return {@code true} for {@link #S}, {@link #SW}, {@link #SE}
+         * Returns {@code true} if this edge includes the south (bottom) side of
+         * the target, meaning a drag should adjust the stage height only.
+         *
+         * @return {@code true} for {@link #S}, {@link #SW}, and {@link #SE}.
          */
         boolean affectsSouth() {
             return switch (this) {
@@ -128,9 +190,11 @@ public final class WindowResizeHandler {
         }
 
         /**
-         * Returns {@code true} if at least one edge is included, else returns {@code false} if
-         * {@link #NONE}.
-         * @return {@code false} only for {@link #NONE}
+         * Returns {@code true} if this value represents an edge or corner that
+         * can participate in a resize drag (i.e. anything other than
+         * {@link #NONE}).
+         *
+         * @return {@code false} only for {@link #NONE}.
          */
         boolean isActive() {
             return this != NONE;
@@ -138,49 +202,71 @@ public final class WindowResizeHandler {
     }
 
     /**
-     * Stage position and size after a resize gesture, result of
-     * {@link #computeBounds(ResizeEdge, double, double, double, double, double, double, double, double)}.
-     * @param x new stage X (screen position of left edge)
-     * @param y new stage Y (screen position of top edge)
-     * @param width new stage width; always {@code >=} the minimum window width
-     * @param height new stage height; always {@code >=} the minimum window height
+     * Immutable result of
+     * {@link #computeBounds(ResizeEdge, double, double, double, double, double, double, double, double)}:
+     * the new top-left position and size a {@link Stage} should adopt after a
+     * resize drag.
+     *
+     * @param x      new stage X (screen position of the left edge).
+     * @param y      new stage Y (screen position of the top edge).
+     * @param width  new stage width; always {@code >=} the supplied minimum.
+     * @param height new stage height; always {@code >=} the supplied minimum.
      * @see #computeBounds(ResizeEdge, double, double, double, double, double, double, double, double)
      * @see #applyBounds(Stage, Bounds)
      */
-    public record Bounds(double x, double y, double width, double height) {}
+    public record Bounds(double x, double y, double width, double height) {
+    }
 
     /**
-     * How close (in pixels) the cursor must be to an edge for {@link #resolveEdge(double, double, double, double, double)}
-     *  to report that edge, and the default margin used by {@link #attach(Node, Stage, double, double)}.
-     *  <p>
-     *      Loaded from {@code config.properties} via {@link GameConfig#getDouble(String, double)}.
-     *  </p>
-     *  Default value: {@code 6} px
+     * How close (in pixels) the cursor must be to an edge for
+     * {@link #resolveEdge(double, double, double, double, double)} to report
+     * that edge, and the default margin used by
+     * {@link #attach(Node, Stage, double, double)}.
+     *
+     * <p>
+     *     Loaded from {@code config.properties} via
+     *     {@link GameConfig#getDouble(String, double)} — this is a tunable UI
+     *     parameter, the same category of value as {@code ui.window.min.width}
+     *     and {@code ui.window.min.height} in that file, so it lives alongside
+     *     them rather than as a Java literal. The {@code 6} argument below is
+     *     only a defensive fallback used if the {@code ui.window.resize.margin}
+     *     key is ever missing from the properties file.
+     * </p>
+     *
+     * @see GameConfig
      */
     static final double DEFAULT_MARGIN = GameConfig.getDouble("ui.window.resize.margin", 6);
 
-    /**
-     * Private constructor. WindowsResizeHandler is a static utility class, no instances of this class
-     * will ever be required.
-     */
-    private WindowResizeHandler() {}
+    private WindowResizeHandler() {
+        // static utility class; instances are unnecessary.
+    }
+
+    // -------------------------------------------------------------------------
+    // Pure logic — fully unit-testable, no JavaFX platform required
+    // -------------------------------------------------------------------------
 
     /**
-     * Determines which edge or corner (if any) a point at {@code (x, y)} is close enough to, given the
-     * bounds of a {@code width} x {@code height} rectangle (the window). N.B. where the top left corner of
-     * the window is the origin.
+     * Determines which edge or corner (if any) a point at {@code (x, y)} is
+     * close enough to, given the bounds of a {@code width} x {@code height}
+     * rectangle whose top-left corner is the origin.
+     *
      * <p>
-     *     Corners take priority over single edge cases, for example: a point near both the top and left
-     *     within {@code margin} resolves to {@link ResizeEdge#NW}, rather than {@link ResizeEdge#N} or
-     *     {@link ResizeEdge#W}. A point that is not within {@code margin} of any edge resolves to
+     *     Corners take priority over single edges: a point near both the top
+     *     and the left within {@code margin} resolves to {@link ResizeEdge#NW},
+     *     not {@link ResizeEdge#N} or {@link ResizeEdge#W}. A point that is
+     *     not within {@code margin} of any edge resolves to
      *     {@link ResizeEdge#NONE}.
      * </p>
-     * @param x horizontal position relative to the window's left edge
-     * @param y vertical position relative to the window's top edge
-     * @param width the window's width; must be {@code > 0}
-     * @param height the window's height; must be {@code > 0}
-     * @param margin how close a point must be to an edge to count as "on" that edge; must be {@code >= 0}
-     * @return the resolves {@link ResizeEdge}, or {@link ResizeEdge#NONE} if the point is not near any edge
+     *
+     * @param x      horizontal position relative to the rectangle's left edge.
+     * @param y      vertical position relative to the rectangle's top edge.
+     * @param width  the rectangle's width; must be {@code > 0}.
+     * @param height the rectangle's height; must be {@code > 0}.
+     * @param margin how close (in the same units as {@code x}/{@code y}) the
+     *               point must be to an edge to count as "on" that edge; must
+     *               be {@code >= 0}.
+     * @return the resolved {@link ResizeEdge}, or {@link ResizeEdge#NONE} if
+     *         the point is not near any edge.
      * @see #edgeAt(Node, MouseEvent)
      * @see #attach(Node, Stage, double, double)
      */
@@ -196,43 +282,56 @@ public final class WindowResizeHandler {
         if (nearSouth && nearEast) return ResizeEdge.SE;
         if (nearNorth) return ResizeEdge.N;
         if (nearSouth) return ResizeEdge.S;
-        if (nearEast) return ResizeEdge.E;
         if (nearWest) return ResizeEdge.W;
+        if (nearEast) return ResizeEdge.E;
         return ResizeEdge.NONE;
     }
 
     /**
-     * Computes the new stage bounds for a resize drag gesture.
+     * Computes the new stage bounds for a resize-drag gesture.
+     *
      * <p>
-     *     {code deltaX} and {@code deltaY} are the total mouse movement in pixels since the drag gesture began.
+     *     {@code deltaX}/{@code deltaY} are the total mouse movement (in screen
+     *     pixels) since the drag began, i.e. {@code currentScreenX -
+     *     startScreenX} and {@code currentScreenY - startScreenY}.
      * </p>
      * <p>
-     *     For edges that include {@link ResizeEdge#N} or {@link ResizeEdge#W} moving the mouse also shifts the
-     *     stage's origin so the opposite edge stays fixed. Edges that include {@link ResizeEdge#S} or {@link ResizeEdge#E}
-     *     only change size, since the top-left corner does not move.
+     *     For edges that include {@link ResizeEdge#N} or {@link ResizeEdge#W},
+     *     moving the mouse also shifts the stage's origin so the opposite edge
+     *     stays fixed — dragging the top edge down should shrink the window
+     *     from the top, not grow it from the bottom. Edges that include
+     *     {@link ResizeEdge#S} or {@link ResizeEdge#E} only change size, since
+     *     the top-left corner does not move.
      * </p>
      * <p>
-     *     Width and height are bounded by {@code minWidth} and {@code minHeight}. When a dimension reaches these
-     *     bounds, all sides are restricted from shrinking further. For example: if a dimension reaches the lower
-     *     bound of {@link ResizeEdge#N} and {@link ResizeEdge#W}, both the {@link ResizeEdge#S} and {@link ResizeEdge#E}
-     *     edges are also restricted from shrinking.
+     *     Width and height are clamped to {@code minWidth}/{@code minHeight}.
+     *     When a dimension is clamped on the {@link ResizeEdge#N}/
+     *     {@link ResizeEdge#W} side, the corresponding position is also
+     *     clamped so the opposite edge does not appear to "slide" past the
+     *     minimum size — i.e. the window stops growing/shrinking exactly at
+     *     the minimum, rather than the origin continuing to follow the cursor
+     *     while the size flatlines.
      * </p>
-     * @param edge the user selected edge/corner being dragged
-     *             {@link ResizeEdge#NONE} returns the starting bounds, unchanged.
-     * @param startX the stage's X position when the drag began.
-     * @param startY the stage's Y position when the drag began.
-     * @param startWidth the stage's width when the drag began, must be {@code > 0}
-     * @param startHeight the stage's height when the drag began, must be {@code > 0}
-     * @param deltaX total horizontal (x-axis) mouse movement since drag began.
-     * @param deltaY total vertical (y-axis) mouse movement since drag began.
-     * @param minWidth the minimum allowed width of window; must be {@code > 0}
-     * @param minHeight the minimum allowed height of window; must be {@code > 0}
+     *
+     * @param edge        which edge/corner is being dragged;
+     *                    {@link ResizeEdge#NONE} returns the starting bounds
+     *                    unchanged.
+     * @param startX      the stage's X position when the drag began.
+     * @param startY      the stage's Y position when the drag began.
+     * @param startWidth  the stage's width when the drag began; must be
+     *                    {@code > 0}.
+     * @param startHeight the stage's height when the drag began; must be
+     *                    {@code > 0}.
+     * @param deltaX      total horizontal mouse movement since the drag began.
+     * @param deltaY      total vertical mouse movement since the drag began.
+     * @param minWidth    the minimum allowed width; must be {@code > 0}.
+     * @param minHeight   the minimum allowed height; must be {@code > 0}.
      * @return the new {@link Bounds} for the stage.
      * @see Bounds
      * @see DragState#boundsFor(MouseEvent, double, double)
      */
-    //@SuppressWarnings(java:S107)
-    static Bounds computeBounds(ResizeEdge edge, double startX, double startY,
+    static Bounds computeBounds(ResizeEdge edge,
+                                double startX, double startY,
                                 double startWidth, double startHeight,
                                 double deltaX, double deltaY,
                                 double minWidth, double minHeight) {
@@ -259,6 +358,7 @@ public final class WindowResizeHandler {
             height = startHeight - deltaY;
             y = startY + deltaY;
         }
+
         if (width < minWidth) {
             if (edge.affectsWest()) {
                 x = startX + (startWidth - minWidth);
@@ -271,13 +371,19 @@ public final class WindowResizeHandler {
             }
             height = minHeight;
         }
+
         return new Bounds(x, y, width, height);
     }
 
     /**
-     * Maps a {@link ResizeEdge} to the {@link Cursor} that should be shown whilst hovering over it.
-     * @param edge the resolved edge; {@link ResizeEdge#NONE} maps to {@link Cursor#DEFAULT}.
+     * Maps a {@link ResizeEdge} to the {@link Cursor} that should be shown
+     * while hovering over it, following the standard OS convention (vertical
+     * double-arrow for N/S, horizontal for E/W, diagonal for corners).
+     *
+     * @param edge the resolved edge; {@link ResizeEdge#NONE} maps to
+     *             {@link Cursor#DEFAULT}.
      * @return the cursor to display; never {@code null}.
+     * @see #resolveEdge(double, double, double, double, double)
      * @see #attach(Node, Stage, double, double)
      */
     static Cursor cursorFor(ResizeEdge edge) {
@@ -290,52 +396,63 @@ public final class WindowResizeHandler {
         };
     }
 
+    // -------------------------------------------------------------------------
+    // JavaFX glue — not unit-tested; requires a running platform and a real
+    // Stage/Node, exactly like the drag-to-move handlers in GamePanel.
+    // -------------------------------------------------------------------------
+
     /**
-     * Attaches edge-drag behaviour to the {@code target}, resizing the {@code stage} when the player drags
-     * from within {@link #DEFAULT_MARGIN} pixels of an edge.
+     * Attaches edge-drag resize behaviour to {@code target}, resizing
+     * {@code stage} when the player drags from within {@link #DEFAULT_MARGIN}
+     * pixels of its edge.
+     *
      * <p>
      *     Registers four mouse event handlers on {@code target}:
      * </p>
      * <ul>
-     *     <li>{@link MouseEvent#MOUSE_MOVED} updates the cursor using {@link #cursorFor(ResizeEdge)} based
-     *     on {@link #edgeAt(Node, MouseEvent)}, to display the appropriate cursor.</li>
-     *     <li> {@link MouseEvent#MOUSE_PRESSED} records the edge under the cursor and the stage's starting
-     *     bounds and mouse position in a {@link DragState}.</li>
-     *     <li>{@link MouseEvent#MOUSE_DRAGGED} calculates and applies the new bounds using
-     *     {@link DragState#boundsFor(MouseEvent, double, double) boundsFor} and {@link #applyBounds(Stage, Bounds)}</li>
-     *     <li>{@link MouseEvent#MOUSE_RELEASED} clears the active drag using {@link DragState#clear()}</li>
+     *     <li>{@link MouseEvent#MOUSE_MOVED} — updates the cursor via
+     *         {@link #cursorFor(ResizeEdge)} based on {@link #edgeAt(Node, MouseEvent)}.</li>
+     *     <li>{@link MouseEvent#MOUSE_PRESSED} — records the edge under the
+     *         cursor and the stage's starting bounds and mouse position in a
+     *         {@link DragState}.</li>
+     *     <li>{@link MouseEvent#MOUSE_DRAGGED} — computes and applies the new
+     *         bounds via {@link DragState#boundsFor(MouseEvent, double, double)}
+     *         and {@link #applyBounds(Stage, Bounds)}.</li>
+     *     <li>{@link MouseEvent#MOUSE_RELEASED} — clears the active drag via
+     *         {@link DragState#clear()}.</li>
      * </ul>
      * <p>
-     *     N.B. This is not unit-tested because it requires a live JavaFX {@link javafx.application.Platform Platform},
-     *     a {@link Node} and a real {@link Stage} - none of which can be tested without an initialised platform.
-     *     The arithmetic logic this method uses comes from {@link #resolveEdge}, {@link #computeBounds} &
-     *     {@link #cursorFor} which covered by WindowResizeHandlerTest.
+     *     Not unit-tested: exercising this method requires a live JavaFX
+     *     platform, a rendered {@link Node}, and a real {@link Stage}, none of
+     *     which can be faked without an initialised platform. The arithmetic
+     *     it delegates to ({@link #resolveEdge}, {@link #computeBounds},
+     *     {@link #cursorFor}) is fully covered by
+     *     {@code WindowResizeHandlerTest}.
      * </p>
-     * @param target the node whose edges trigger the resize gesture ({@link GameWindow}'s FXML root)
-     * @param stage the undecorated stage that needs to be resized/repositioned
-     * @param minWidth the minimum allowed stage width, usually loaded from {@code ui.window.min.width} by
-     *                 {@link GameConfig}
-     * @param minHeight the minimum allowed stage height, usually loaded from {@code ui.window.min.height} by
-     *                 {@link GameConfig}
-     * @see GameWindow#start(Stage) 
+     *
+     * @param target    the node whose edges trigger the resize gesture; in
+     *                  production this is {@link GameWindow}'s loaded FXML root.
+     * @param stage     the undecorated stage to resize and reposition.
+     * @param minWidth  the minimum allowed stage width, typically loaded from
+     *                  {@code ui.window.min.width} in {@code config.properties}.
+     * @param minHeight the minimum allowed stage height, typically loaded from
+     *                  {@code ui.window.min.height} in {@code config.properties}.
+     * @see GameWindow#start(Stage)
      * @see GameConfig
      */
     public static void attach(Node target, Stage stage, double minWidth, double minHeight) {
-        logger.debug("Attaching JavaFX window resize handlers [minWidth={}, minHeight={}]", minWidth, minHeight);
+        logger.debug("Attaching edge-drag resize handling (minWidth={}, minHeight={})", minWidth, minHeight);
 
-        DragState dragState = new DragState();
+        var dragState = new DragState();
 
-        /* Sets the correct cursor type */
         target.addEventHandler(MouseEvent.MOUSE_MOVED, event ->
                 target.setCursor(cursorFor(edgeAt(target, event))));
 
-        /* Determines the active edge and initialises the resize drag gesture */
         target.addEventHandler(MouseEvent.MOUSE_PRESSED, event -> {
             ResizeEdge edge = edgeAt(target, event);
             dragState.begin(edge, event, stage);
         });
 
-        /* Calculates and sets the new window bounds */
         target.addEventHandler(MouseEvent.MOUSE_DRAGGED, event -> {
             Bounds bounds = dragState.boundsFor(event, minWidth, minHeight);
             if (bounds != null) {
@@ -343,33 +460,37 @@ public final class WindowResizeHandler {
             }
         });
 
-        target.addEventHandler(MouseEvent.MOUSE_RELEASED, event ->
-                dragState.clear());
+        target.addEventHandler(MouseEvent.MOUSE_RELEASED, event -> dragState.clear());
     }
 
     /**
-     * Resolves which {@link ResizeEdge edge} the mouse in {@code event} is occurring on, relative to
-     * {@code target}'s local bounds and {@link #DEFAULT_MARGIN}.
-     * @param target the JavaFX node acting as the interactive surface for window resizing (i.e. window's root)
-     * @param event the mouse event supplying the local {@code (x, y)} coordinates of the mouse ({@link MouseEvent#getX()},
-     *              {@link MouseEvent#getY()})
-     * @return the resolved edge, or {@link ResizeEdge#NONE} if the cursor is not near any edge.
-     * @see #resolveEdge(double, double, double, double, double) 
+     * Resolves which {@link ResizeEdge} the mouse in {@code event} is over,
+     * relative to {@code target}'s local bounds and {@link #DEFAULT_MARGIN}.
+     *
+     * @param target the node whose local coordinate space defines the edge
+     *               detection rectangle.
+     * @param event  the mouse event supplying {@link MouseEvent#getX()} and
+     *               {@link MouseEvent#getY()} in local coordinates.
+     * @return the resolved edge, or {@link ResizeEdge#NONE} if the cursor is
+     *         not near any edge.
+     * @see #resolveEdge(double, double, double, double, double)
      */
     private static ResizeEdge edgeAt(Node target, MouseEvent event) {
-        javafx.geometry.Bounds bounds = target.getBoundsInLocal();
-        return resolveEdge(event.getX(), event.getY(), bounds.getWidth(), bounds.getHeight(), DEFAULT_MARGIN);
+        var bounds = target.getBoundsInLocal();
+        return resolveEdge(event.getX(), event.getY(),
+                bounds.getWidth(), bounds.getHeight(), DEFAULT_MARGIN);
     }
 
     /**
-     * Applies a calculated {@link Bounds} record to a {@link Stage}, updating the position and size of the
-     * window.
-     * @param stage the stage to resize/reposition
+     * Applies a computed {@link Bounds} record to a {@link Stage}, updating its
+     * position and size in a single step.
+     *
+     * @param stage  the stage to mutate.
      * @param bounds the new position and dimensions to apply.
      * @see Bounds
-     * @see Stage#setX(double) 
-     * @see Stage#setY(double) 
-     * @see Stage#setWidth(double) 
+     * @see Stage#setX(double)
+     * @see Stage#setY(double)
+     * @see Stage#setWidth(double)
      * @see Stage#setHeight(double)
      */
     private static void applyBounds(Stage stage, Bounds bounds) {
@@ -380,21 +501,32 @@ public final class WindowResizeHandler {
     }
 
     /**
-     * This nested class tracks the state and lifecycle of a single window resizing gesture.
+     * Mutable drag session between {@link MouseEvent#MOUSE_PRESSED} on an
+     * active {@link ResizeEdge} and the corresponding
+     * {@link MouseEvent#MOUSE_RELEASED}.
+     *
      * <p>
-     *     Nested inside {@link WindowResizeHandler} rather than declared as a top-level class, because it exists
-     *     to support {@link #attach(Node, Stage, double, double)} and is not used elsewhere. For every attach
-     *     call, an instance of {@code DragState} is created.
+     *     Nested inside {@link WindowResizeHandler} (rather than declared as a
+     *     separate top-level class) because it exists solely to support
+     *     {@link #attach(Node, Stage, double, double)}: one instance is created
+     *     per attach call and is not part of the public API. Nesting keeps the
+     *     session state encapsulated and co-located with the event handlers that
+     *     consume it.
      * </p>
-     * <h2>Lifecycle:</h2>
+     *
+     * <p>
+     *     Lifecycle:
+     * </p>
      * <ol>
-     *     <li>{@link #begin(ResizeEdge, MouseEvent, Stage)}: records the initial window geometry and the target edge
-     *     of the current resizing gesture</li>
-     *     <li>{@link #boundsFor(MouseEvent, double, double)}: calculates the new {@link Bounds} for each drag event</li>
-     *     <li>{@link #clear()}: resets the edge when the mouse is {@link MouseEvent#MOUSE_RELEASED released}</li>
+     *     <li>{@link #begin(ResizeEdge, MouseEvent, Stage)} — snapshot edge and
+     *         starting bounds on press;</li>
+     *     <li>{@link #boundsFor(MouseEvent, double, double)} — compute new
+     *         {@link Bounds} on each drag event;</li>
+     *     <li>{@link #clear()} — reset on release.</li>
      * </ol>
-     * @see #attach
-     * @see #computeBounds
+     *
+     * @see #attach(Node, Stage, double, double)
+     * @see #computeBounds(ResizeEdge, double, double, double, double, double, double, double, double)
      * @see Bounds
      */
     private static final class DragState {
@@ -407,51 +539,58 @@ public final class WindowResizeHandler {
         private double startHeight;
 
         /**
-         * Records the edge under the cursor for the current resize gesture. If it is active, it records the current
-         * stage bounds and mouse position (at the start of the drag)
-         * @param edge the edge resolved by {@link #edgeAt(Node, MouseEvent)}
-         * @param event the triggering mouse press event which provides the screen coordinates
-         * @param stage the stage whose bounds are recorded
+         * Records the edge under the cursor and, if it is active, snapshots
+         * the stage bounds and mouse screen position at the start of the drag.
+         *
+         * @param edge  the edge resolved by {@link #edgeAt(Node, MouseEvent)}.
+         * @param event the press event supplying screen coordinates.
+         * @param stage the stage whose bounds are snapshotted.
          * @see ResizeEdge#isActive()
          */
         void begin(ResizeEdge edge, MouseEvent event, Stage stage) {
-            this.activeEdge = edge;
+            activeEdge = edge;
             if (!edge.isActive()) {
                 return;
             }
-            this.startScreenX = event.getScreenX();
-            this.startScreenY = event.getScreenY();
-            this.startStageX = stage.getX();
-            this.startStageY = stage.getY();
-            this.startWidth = stage.getWidth();
-            this.startHeight = stage.getHeight();
-            logger.debug("Resize drag started on edge: {}", edge);
+            startScreenX = event.getScreenX();
+            startScreenY = event.getScreenY();
+            startStageX = stage.getX();
+            startStageY = stage.getY();
+            startWidth = stage.getWidth();
+            startHeight = stage.getHeight();
+            logger.debug("Resize drag started on edge {}", edge);
         }
 
         /**
-         * Calculates the new stage {@link Bounds} for the current drag position, or returns {@code null} if no
-         * active edge was recorded at the time of the {@link MouseEvent#MOUSE_PRESSED} event.
-         * @param event the drag event supplying the current screen position
-         * @param minWidth minimum allowed stage width passed through to {@link #computeBounds}
-         * @param minHeight minimum allowed stage height passed through to {@link #computeBounds}
-         * @return the new bounds, or {@code null} when {@link #activeEdge} is {@link ResizeEdge#NONE NONE}
+         * Computes the new stage {@link Bounds} for the current drag position,
+         * or returns {@code null} if no active edge was recorded at press time.
+         *
+         * @param event     the drag event supplying the current screen position.
+         * @param minWidth  minimum allowed stage width passed through to
+         *                  {@link #computeBounds(ResizeEdge, double, double, double, double, double, double, double, double)}.
+         * @param minHeight minimum allowed stage height passed through to
+         *                  {@link #computeBounds(ResizeEdge, double, double, double, double, double, double, double, double)}.
+         * @return the new bounds, or {@code null} when {@link #activeEdge} is
+         *         {@link ResizeEdge#NONE}.
+         * @see #computeBounds(ResizeEdge, double, double, double, double, double, double, double, double)
          */
         Bounds boundsFor(MouseEvent event, double minWidth, double minHeight) {
-            if (!this.activeEdge.isActive()) {
+            if (!activeEdge.isActive()) {
                 return null;
             }
-            double deltaX = event.getScreenX() - this.startScreenX;
-            double deltaY = event.getScreenY() - this.startScreenY;
-            return computeBounds(this.activeEdge, this.startStageX, this.startStageY, this.startWidth,
-                    this.startHeight, deltaX, deltaY, minWidth, minHeight);
+            double deltaX = event.getScreenX() - startScreenX;
+            double deltaY = event.getScreenY() - startScreenY;
+            return computeBounds(activeEdge,
+                    startStageX, startStageY, startWidth, startHeight,
+                    deltaX, deltaY, minWidth, minHeight);
         }
 
         /**
-         * Ends the current drag session by resetting {@link #activeEdge} to {@link ResizeEdge#NONE NONE}
+         * Ends the current drag session by resetting {@link #activeEdge} to
+         * {@link ResizeEdge#NONE}.
          */
         void clear() {
-            this.activeEdge = ResizeEdge.NONE;
+            activeEdge = ResizeEdge.NONE;
         }
     }
-
 }

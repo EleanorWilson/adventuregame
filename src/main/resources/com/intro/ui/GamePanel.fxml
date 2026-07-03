@@ -1,60 +1,147 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!--
-GamePanel.fxml is the layout for the game ui:
-- BorderPane
-    - Top
-        - HBox
-            - Label - Window title (%ui.window.title)
-            - Button - Minimise (%ui.button.minimise)
-            - Button - Maximise (%ui.button.maximise)
-            - Button - Close (%ui.button.close)
-    - Centre
-        - VBox
-            - TextArea - Narrative text output
-    - Bottom
-        - HBox
-            - TextField - Input field (%ui.input.prompt.placeholder)
-            - Button - Submit button (%ui.submit.button.label)
+    GamePanel.fxml — Declarative layout for the main game view.
 
-Important notes:
-> %key resolved by FXMLLoader with ResourceBundle from messages.properties.
-> fx:id values must match an @FXML field in GamePanel.java
-> onAction="#..." value must match an @FXML void method in GamePanel.java
-> This fxml creates a custom title bar
- -->
+    This file defines *what the UI looks like*. All event handling and business
+    logic lives in the controller class: com.intro.ui.GamePanel.
+
+    Display strings (window title, tooltip text, placeholder text) are NOT
+    hardcoded here. They are resolved at load time from messages.properties via
+    the %key syntax. GameWindow passes the ResourceBundle to FXMLLoader, which
+    substitutes every %key reference before the controller is initialised.
+
+    Layout overview
+    ───────────────
+    BorderPane (root, fx:id="rootPane")
+    ├── top     → HBox           (title bar — custom window decorations)
+    │              ├── Label     (window title           %ui.window.title)
+    │              ├── Region    (spacer, HBox.hgrow=ALWAYS — pins buttons right)
+    │              ├── Button    (theme toggle             %ui.button.theme.toggle)
+    │              ├── Button    (minimise                 %ui.button.minimise.tooltip)
+    │              ├── Button    (maximise                 %ui.button.maximise.tooltip)
+    │              └── Button    (close                    %ui.button.close.tooltip)
+    ├── center  → VBox
+    │              └── TextArea  (narrativeArea)   read-only story output
+    └── bottom  → HBox           (input bar)
+                   ├── TextField (inputField)      player types here
+                   └── Button    (submitButton)    submits the answer
+
+    Custom title bar
+    ────────────────
+    The Stage is initialised with StageStyle.UNDECORATED in GameWindow, which
+    removes the operating system's native title bar. This HBox replaces it so
+    the window controls match the dark terminal theme.
+
+    The HBox listens for mouse events to support:
+      - Drag-to-move            (onMousePressed + onMouseDragged)
+      - Double-click-to-maximise (onMouseClicked, checked for clickCount == 2)
+
+    Pinning buttons to the top-right corner
+    ────────────────────────────────────────
+    A dedicated Region spacer (not the title Label) carries HBox.hgrow="ALWAYS".
+    Because the spacer — not the label — absorbs all leftover horizontal space,
+    the four trailing buttons are pushed flush against the right edge of the
+    title bar regardless of how long the window title text is, or how the
+    Label's own font metrics render. This is more robust than growing the Label
+    itself, which would only work correctly by coincidence.
+
+    Window-control icons (SVGPath, not raster images)
+    ──────────────────────────────────────────────────
+    JavaFX has no built-in loader for arbitrary multi-path SVG files (there is
+    no javafx.scene.image.Image constructor that rasterises SVG). The source
+    .svg files supplied for these icons are kept at
+    src/main/resources/com/intro/ui/icons/ (minimize-fill.svg, square.svg,
+    close.svg) for provenance/reference, but at render time each icon is drawn
+    using javafx.scene.shape.SVGPath, a real vector shape (crisp at any window
+    scale) whose fill colour is controlled entirely from game.css via the
+    ".title-icon" style class.
+
+    None of the four title-bar icons (theme toggle, minimise, maximise,
+    close) have their "d" path data inlined in this file. Every SVGPath here
+    is declared with only an fx:id and no content attribute; GamePanel's
+    initialize() sets each one's content from IconRegistry, which loads the
+    path data from icons.properties (co-located in com/intro/ui/). This keeps
+    all SVG vector data in one resource file instead of scattering it across
+    Java source and FXML. To change an icon's shape, edit icons.properties
+    only — no FXML or Java change is required.
+
+    %key resolution
+    ───────────────
+    Every text="%key", promptText="%key", and Tooltip text="%key" attribute is
+    resolved by FXMLLoader against the ResourceBundle loaded from
+    messages.properties (co-located in com/intro/ui/). To change any visible
+    string, edit messages.properties only — no FXML change is required. To add
+    a locale variant, create messages_fr.properties, messages_de.properties,
+    etc. alongside the default.
+
+    Note: messages.properties and icons.properties are intentionally
+    separate files. messages.properties holds translatable, user-facing text
+    and is locale-variant-able (messages_fr.properties, etc.); icons.properties
+    holds SVGPath vector data, which is not language-dependent and must not be
+    duplicated across locale variants.
+
+    FXML ↔ controller contract
+    ──────────────────────────
+    Every fx:id value must match a @FXML field in GamePanel.java.
+    Every onAction="#..." value must match a @FXML void method in GamePanel.java.
+-->
 
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.Label?>
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.Tooltip?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.layout.Region ?>
 <?import javafx.scene.shape.SVGPath?>
-<?import javafx.scene.control.Tooltip?>
 
 <BorderPane fx:id="rootPane"
             xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.intro.ui.GamePanel">
 
-    <!-- TOP -->
+    <!-- ═══════════════════════════════════════════════════════════════════
+         TOP — custom title bar
+         Replaces the native OS title bar (removed by StageStyle.UNDECORATED
+         in GameWindow). Supports drag-to-move and double-click-to-maximise.
+         All visible strings resolved from messages.properties at load time.
+         ═══════════════════════════════════════════════════════════════════ -->
     <top>
         <HBox styleClass="title-bar"
               onMousePressed="#onTitleBarPressed"
               onMouseDragged="#onTitleBarDragged"
               onMouseClicked="#onTitleBarDoubleClicked">
 
+            <!--
+                Window title label.
+                text="%ui.window.title" resolves to the value of ui.window.title
+                in messages.properties (default: "Adventure Game").
+            -->
             <Label text="%ui.window.title"
-            styleClass="title-label"/>
+                   styleClass="title-label"/>
 
-            <!-- Spacer to push title bar buttons to the right -->
+            <!--
+                Spacer — absorbs all leftover horizontal space so the buttons
+                that follow are always flush against the right edge of the
+                title bar. See "Pinning buttons to the top-right corner" above.
+            -->
             <Region HBox.hgrow="ALWAYS"/>
 
-            <!-- Toggle light/dark mode button -->
+            <!--
+                Theme toggle button — switches between dark and light mode.
+                Graphic content is swapped at runtime by
+                GamePanel.handleToggleTheme() between a moon icon (dark mode
+                active — click to switch to light) and a sun icon (light mode
+                active — click to switch to dark). Icon path data lives in
+                icons.properties (ui.icon.theme.moon / ui.icon.theme.sun),
+                loaded via IconRegistry and set as the SVGPath's content in
+                code because it changes at runtime; fx:id lets the controller
+                reach the shape directly.
+            -->
             <Button fx:id="themeToggleButton"
                     onAction="#handleToggleTheme"
                     styleClass="title-button theme-toggle-button"
@@ -67,7 +154,11 @@ Important notes:
                 </tooltip>
             </Button>
 
-            <!-- Minimise button -->
+            <!--
+                Minimise button — horizontal bar icon.
+                Path data lives in icons.properties (ui.icon.window.minimise),
+                set on this SVGPath by GamePanel.initialize() via IconRegistry.
+            -->
             <Button onAction="#handleMinimise"
                     styleClass="title-button"
                     focusTraversable="false">
@@ -79,7 +170,12 @@ Important notes:
                 </tooltip>
             </Button>
 
-            <!-- Maximise button -->
+            <!--
+                Maximise / restore button — hollow square icon.
+                Path data lives in icons.properties (ui.icon.window.maximise),
+                set on this SVGPath by GamePanel.initialize() via IconRegistry.
+                Double-clicking the title bar triggers the same action.
+            -->
             <Button onAction="#handleMaximise"
                     styleClass="title-button"
                     focusTraversable="false">
@@ -91,7 +187,12 @@ Important notes:
                 </tooltip>
             </Button>
 
-            <!-- Close button -->
+            <!--
+                Close button — X icon.
+                Path data lives in icons.properties (ui.icon.window.close),
+                set on this SVGPath by GamePanel.initialize() via IconRegistry.
+                The close-button style class applies a red hover colour.
+            -->
             <Button onAction="#handleClose"
                     styleClass="title-button close-button"
                     focusTraversable="false">
@@ -105,32 +206,53 @@ Important notes:
         </HBox>
     </top>
 
-    <!-- CENTER: The game narrative text is printed here -->
+    <!-- ═══════════════════════════════════════════════════════════════════
+         CENTER — narrative output area
+         ═══════════════════════════════════════════════════════════════════ -->
     <center>
         <VBox BorderPane.alignment="CENTER">
             <padding>
                 <Insets top="8" right="8" bottom="0" left="8"/>
             </padding>
 
-            <!-- focusTraversable allows area to be selected with TAB -->
-            <!--suppress JavaFxRedundantPropertyValue -->
+            <!--
+                narrativeArea
+                ─────────────
+                Displays the full game log: scene descriptions, prompts, and
+                any text printed by GameIO.println(). Set to:
+                  editable="false"         — player cannot modify game output
+                  wrapText="true"          — long lines wrap; no horizontal scroll
+                  focusTraversable="false" — Tab skips this area
+                  VBox.vgrow="ALWAYS"      — fills all available vertical space
+            -->
             <TextArea fx:id="narrativeArea"
                       editable="false"
                       wrapText="true"
-                      focusTraversable="true"
+                      focusTraversable="false"
                       styleClass="narrative-area"
                       VBox.vgrow="ALWAYS"/>
         </VBox>
     </center>
 
-    <!-- BOTTOM -->
+    <!-- ═══════════════════════════════════════════════════════════════════
+         BOTTOM — player input bar
+         ═══════════════════════════════════════════════════════════════════ -->
     <bottom>
         <HBox spacing="8" styleClass="input-bar">
             <padding>
                 <Insets top="8" right="8" bottom="8" left="8"/>
             </padding>
 
-            <!-- input field -->
+            <!--
+                inputField
+                ──────────
+                  promptText="%ui.input.prompt.placeholder" — resolved from
+                    messages.properties at load time.
+                  disable="true"       — locked until game engine calls prompt()
+                  HBox.hgrow="ALWAYS"  — expands horizontally
+                  onAction fires handleSubmit() when the player presses Enter,
+                  equivalent to clicking the Submit button.
+            -->
             <TextField fx:id="inputField"
                        promptText="%ui.input.prompt.placeholder"
                        disable="true"
@@ -138,7 +260,12 @@ Important notes:
                        HBox.hgrow="ALWAYS"
                        onAction="#handleSubmit"/>
 
-            <!-- submit button -->
+            <!--
+                submitButton
+                ────────────
+                  text="%ui.submit.button.label" — resolved from messages.properties.
+                  disable="true" — locked until game engine calls prompt()
+            -->
             <Button fx:id="submitButton"
                     text="%ui.submit.button.label"
                     disable="true"
@@ -146,4 +273,5 @@ Important notes:
                     onAction="#handleSubmit"/>
         </HBox>
     </bottom>
+
 </BorderPane>

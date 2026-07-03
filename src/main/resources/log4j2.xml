@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!-- Log4j2 logging about itself -->
 <Configuration status = "WARN">
-    <!-- Application level logging, can change to: info, debug or trace -->
+    <!-- Application level logging. Change to info, debug or trace. -->
     <Loggers>
         <Root level="info">
             <AppenderRef ref="fileLogger"/>
         </Root>
     </Loggers>
     <Appenders>
-        <!-- .%i renames the old log file for removal once it hits 1MB -->
+        <!-- .%i renames the old log file with extension '.log.x' -->
         <!-- target=SYSTEM_ERR because SYSTEM_OUT currently used for gameplay -->
         <RollingFile name="fileLogger"
                      fileName="src/main/resources/adventuregame.log"
@@ -17,16 +17,16 @@
                 <pattern>
                     <!-- [%-5level] '-' left aligned, '5' field width of 5 chars, 'level' log level -->
                     <!-- '%d' date and time, 'M' month, 'm' minute, 's' second, 'S' millisecond -->
-                    <!-- '%t' name of thread that generated log events -->
+                    <!-- '%t' name of thread that generated log event -->
                     <!-- '%c' name of logger (class) that published event
-                    '{1}' abbreviate to final name (class name only, 'com.'... removed) -->
+                     {1} abbreviate to class name only (remove 'com.intro...' prefix) -->
                     <!-- '%msg' log message, '%n' new line -->
                     [%-5level] %d{YYYY-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
                 </pattern>
             </PatternLayout>
-            <!-- Log file deleted once it reaches 1MB -->
+            <!-- Log file deleted once it reaches 1 MB -->
             <Policies>
-                <SizeBasedTriggeringPolicy size ="1MB"/>
+                <SizeBasedTriggeringPolicy size="1MB" />
             </Policies>
             <!-- Max 1 log file -->
             <DefaultRolloverStrategy max="1">
@@ -37,4 +37,5 @@
             </DefaultRolloverStrategy>
         </RollingFile>
     </Appenders>
+
 </Configuration>

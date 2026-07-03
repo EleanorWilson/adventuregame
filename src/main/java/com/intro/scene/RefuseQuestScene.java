@@ -4,7 +4,7 @@ import com.intro.model.Player;
 import com.intro.io.GameIO;
 
 /**
- * Accessed through the {@code Refuse} option of the {@link SceneID#QUEST} scene.
+ * Accessed through the {@code refuse} option of the {@link SceneID#QUEST} scene.
  */
 public class RefuseQuestScene implements Scene {
 
