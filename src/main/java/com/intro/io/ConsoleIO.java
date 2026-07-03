@@ -112,7 +112,7 @@ public class ConsoleIO implements GameIO {
     @Override
     public void printBanner(String title) {
         logger.debug("printBanner: [{}]", title);
-        int width = GameConfig.getInt("io.console.line.width", 80);
+        int width = GameConfig.getInt("io.console.line.width", 50);
         println(NarrativeFormatter.separatorLine(width));
         println(NarrativeFormatter.centeredLine(title, width));
         println(NarrativeFormatter.separatorLine(width));
