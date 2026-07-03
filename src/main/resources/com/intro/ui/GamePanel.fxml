@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+GamePanel.fxml is the layout for the game ui:
+- BorderPane
+    - Top
+        - HBox
+            - Label - Window title (%ui.window.title)
+            - Button - Minimise (%ui.button.minimise)
+            - Button - Maximise (%ui.button.maximise)
+            - Button - Close (%ui.button.close)
+    - Centre
+        - VBox
+            - TextArea - Narrative text output
+    - Bottom
+        - HBox
+            - TextField - Input field (%ui.input.prompt.placeholder)
+            - Button - Submit button (%ui.submit.button.label)
+
+Important notes:
+> %key resolved by FXMLLoader with ResourceBundle from messages.properties.
+> fx:id values must match an @FXML field in GamePanel.java
+> onAction="#..." value must match an @FXML void method in GamePanel.java
+> This fxml creates a custom title bar
+ -->
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.Region ?>
+<?import javafx.scene.shape.SVGPath?>
+<?import javafx.scene.control.Tooltip?>
+
+<BorderPane fx:id="rootPane"
+            xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.intro.ui.GamePanel">
+
+    <!-- TOP -->
+    <top>
+        <HBox styleClass="title-bar"
+              onMousePressed="#onTitleBarPressed"
+              onMouseDragged="#onTitleBarDragged"
+              onMouseClicked="#onTitleBarDoubleClicked">
+
+            <Label text="%ui.window.title"
+            styleClass="title-label"/>
+
+            <!-- Spacer to push title bar buttons to the right -->
+            <Region HBox.hgrow="ALWAYS"/>
+
+            <!-- Toggle light/dark mode button -->
+            <Button fx:id="themeToggleButton"
+                    onAction="#handleToggleTheme"
+                    styleClass="title-button theme-toggle-button"
+                    focusTraversable="false">
+                <graphic>
+                    <SVGPath fx:id="themeToggleIcon" styleClass="title-icon"/>
+                </graphic>
+                <tooltip>
+                    <Tooltip text="%ui.button.theme.toggle"/>
+                </tooltip>
+            </Button>
+
+            <!-- Minimise button -->
+            <Button onAction="#handleMinimise"
+                    styleClass="title-button"
+                    focusTraversable="false">
+                <graphic>
+                    <SVGPath fx:id="minimiseIcon" styleClass="title-icon"/>
+                </graphic>
+                <tooltip>
+                    <Tooltip text="%ui.button.minimise.tooltip"/>
+                </tooltip>
+            </Button>
+
+            <!-- Maximise button -->
+            <Button onAction="#handleMaximise"
+                    styleClass="title-button"
+                    focusTraversable="false">
+                <graphic>
+                    <SVGPath fx:id="maximiseIcon" styleClass="title-icon"/>
+                </graphic>
+                <tooltip>
+                    <Tooltip text="%ui.button.maximise.tooltip"/>
+                </tooltip>
+            </Button>
+
+            <!-- Close button -->
+            <Button onAction="#handleClose"
+                    styleClass="title-button close-button"
+                    focusTraversable="false">
+                <graphic>
+                    <SVGPath fx:id="closeIcon" styleClass="title-icon"/>
+                </graphic>
+                <tooltip>
+                    <Tooltip text="%ui.button.close.tooltip"/>
+                </tooltip>
+            </Button>
+        </HBox>
+    </top>
+
+    <!-- CENTER: The game narrative text is printed here -->
+    <center>
+        <VBox BorderPane.alignment="CENTER">
+            <padding>
+                <Insets top="8" right="8" bottom="0" left="8"/>
+            </padding>
+
+            <!-- focusTraversable allows area to be selected with TAB -->
+            <!--suppress JavaFxRedundantPropertyValue -->
+            <TextArea fx:id="narrativeArea"
+                      editable="false"
+                      wrapText="true"
+                      focusTraversable="true"
+                      styleClass="narrative-area"
+                      VBox.vgrow="ALWAYS"/>
+        </VBox>
+    </center>
+
+    <!-- BOTTOM -->
+    <bottom>
+        <HBox spacing="8" styleClass="input-bar">
+            <padding>
+                <Insets top="8" right="8" bottom="8" left="8"/>
+            </padding>
+
+            <!-- input field -->
+            <TextField fx:id="inputField"
+                       promptText="%ui.input.prompt.placeholder"
+                       disable="true"
+                       styleClass="input-field"
+                       HBox.hgrow="ALWAYS"
+                       onAction="#handleSubmit"/>
+
+            <!-- submit button -->
+            <Button fx:id="submitButton"
+                    text="%ui.submit.button.label"
+                    disable="true"
+                    styleClass="submit-button"
+                    onAction="#handleSubmit"/>
+        </HBox>
+    </bottom>
+</BorderPane>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- Log4j2 logging about itself -->
+<Configuration status = "WARN">
+    <!-- Application level logging, can change to: info, debug or trace -->
+    <Loggers>
+        <Root level="info">
+            <AppenderRef ref="fileLogger"/>
+        </Root>
+    </Loggers>
+    <Appenders>
+        <!-- .%i renames the old log file for removal once it hits 1MB -->
+        <!-- target=SYSTEM_ERR because SYSTEM_OUT currently used for gameplay -->
+        <RollingFile name="fileLogger"
+                     fileName="src/main/resources/adventuregame.log"
+                     filePattern="src/main/resources/adventuregame.log.%i">
+            <PatternLayout>
+                <pattern>
+                    <!-- [%-5level] '-' left aligned, '5' field width of 5 chars, 'level' log level -->
+                    <!-- '%d' date and time, 'M' month, 'm' minute, 's' second, 'S' millisecond -->
+                    <!-- '%t' name of thread that generated log events -->
+                    <!-- '%c' name of logger (class) that published event
+                    '{1}' abbreviate to final name (class name only, 'com.'... removed) -->
+                    <!-- '%msg' log message, '%n' new line -->
+                    [%-5level] %d{YYYY-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
+                </pattern>
+            </PatternLayout>
+            <!-- Log file deleted once it reaches 1MB -->
+            <Policies>
+                <SizeBasedTriggeringPolicy size ="1MB"/>
+            </Policies>
+            <!-- Max 1 log file -->
+            <DefaultRolloverStrategy max="1">
+                <Delete basePath="src/main/resources" maxDepth="1">
+                    <!-- Removes old log files after they have been renamed with '.log.x' extension -->
+                    <IfFileName glob="adventuregame.log.*"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
+    </Appenders>
+</Configuration>

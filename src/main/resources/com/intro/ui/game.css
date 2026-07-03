@@ -1,0 +1,270 @@
+/*
+Pseudo classes for javafx nodes include:
+:hover - when mouse cursor is over the node
+:pressed - when button is held down
+:focused - when node has a keyboard focus (i.e. TAB onto node)
+:disabled - when node is disabled
+ */
+.root {
+    -fx-background-color: #191A1C;
+    -fx-font-family: "Google Sans Code Regular", monospace;
+}
+
+/* ---------- TITLE BAR ---------- */
+
+.title-bar {
+    -fx-background-color: #191A1C;
+    -fx-border-color: #863BBF;
+    -fx-border-width: 0 0 1 0;
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 0 0 0 12;
+    -fx-min-height: 34px;
+}
+
+.title-label {
+    -fx-text-fill: #863BBF;
+    -fx-font-family: "Metamorphous", serif;
+    -fx-font-size: 13px;
+    -fx-font-style: normal;
+}
+
+.title-button {
+    -fx-background-color: transparent;
+    -fx-min-width: 46px;
+    -fx-max-width: 46px;
+    -fx-min-height: 34px;
+    -fx-max-height: 34px;
+    -fx-padding: 0;
+    -fx-background-radius: 0;
+    -fx-border-width: 0;
+    -fx-cursor: hand;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.title-icon {
+    -fx-fill: #8080aa;
+    -fx-scale-x: 0.6;
+    -fx-scale-y: 0.6;
+}
+
+.title-button:hover {
+    -fx-background-color: #20327A;
+}
+
+.title-button:hover .title-icon {
+    -fx-fill: #d0d0ff;
+}
+
+.title-button:pressed {
+    -fx-background-color: #091959;
+}
+
+.close-button:hover {
+    -fx-background-color: #A10505;
+}
+
+.close-button:hover .title-icon{
+    -fx-fill: #F7E1E1;
+}
+
+.close-button:pressed {
+    -fx-background-color: #750707;
+}
+
+.close-button:pressed .title-icon {
+    -fx-fill: #F7E1E1;
+}
+
+/* ---------- OUTPUT ---------- */
+
+.narrative-area {
+    -fx-background-color: #191A1C;
+    -fx-control-inner-background: #191A1C;
+    -fx-text-fill: #56A8F5FF;
+    -fx-font-family: "Google Sans Code Regular", monospace;
+    -fx-font-size: 14px;
+    -fx-border-color: transparent;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-colour: transparent;
+    -fx-padding: 12px;
+}
+
+.narrative-area .scroll-pane {
+    -fx-background-color: #191A1C;
+    -fx-border-color: transparent;
+}
+
+.narrative-area .content {
+    -fx-background-color: #191A1C;
+    -fx-padding: 5% 10%;
+    /* TODO test -fx-padding: 8 12 8 12; */
+}
+
+.narrative-area .scroll-bar:vertical {
+    -fx-background-color: #330654;
+}
+
+.narrative-area .scroll-bar:vertical .thumb {
+    -fx-background-color: #4B0A7A;
+    -fx-background-radius: 4;
+}
+
+/* ---------- INPUT ---------- */
+
+.input-bar {
+    -fx-background-color: #191A1C;
+    -fx-border-color: #4B0A7A;
+    -fx-border-width: 1 0 0 0;
+}
+
+.input-field {
+    -fx-background-color: #191A1C;
+    -fx-text-fill: #863BBF;
+    -fx-prompt-text-fill: #C7AFC9;
+    -fx-font-family: "Google Sans Code Regular", monospace;
+    -fx-font-size: 14px;
+    -fx-border-color: #330654;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-padding: 6 10 6 10;
+}
+
+.input-field:focused {
+    -fx-border-color: #863BBF;
+    -fx-effect: dropshadow(gaussian, #4B0A7A, 6, 0.4, 0, 0);
+}
+
+.input-field:disabled {
+    -fx-opacity: 0.45;
+}
+
+/* ---------- SUBMIT ---------- */
+
+.submit-button {
+    -fx-background-color: #195E0E;
+    -fx-text-fill: #DCEDDA;
+    -fx-font-family: "Google Sans Code Regular", monospace;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-padding: 6 18 6 18;
+    -fx-cursor: hand;
+}
+
+.submit-button:hover {
+    -fx-background-color: #2C991A;
+    -fx-effect: dropshadow(gaussian, #0F4006, 6, 0.4, 0, 0);
+}
+
+.submit-button:pressed {
+    -fx-background-color: #0F4006;
+}
+
+.submit-button:disabled {
+    -fx-opacity: 0.45;
+    -fx-cursor: default;
+}
+
+/* ------------------------------------------------------
+ * LIGHT THEME SETTINGS
+ * ------------------------------------------------------
+ */
+
+root.light-theme {
+    -fx-background-color: #f4f4f4;
+}
+
+root.light-theme .title-bar {
+    -fx-background-color: #e6e2f0;
+    -fx-border-color: #b7a6d9;
+}
+
+.root.light-theme .title-label {
+    -fx-text-fill: #4b3b73
+}
+
+.root.light-theme .title-icon {
+    -fx-fill: #4b3b73;
+}
+
+.root.light-theme .title-button:hover {
+    -fx-background-color: #d3c9e8
+}
+
+.root.light-theme .title-button:hover .title-icon {
+    -fx-fill: #2e2350;
+}
+
+.root.light-theme .title-button:pressed {
+    -fx-background-color: #c3b6de;
+}
+
+.root.light-theme .close-button:hover {
+    -fx-background-color: #c0392b;
+}
+
+.root.light-theme .close-button:hover .title-icon {
+    -fx-fill: #ffffff;
+}
+
+.root.light-theme .close-button:pressed {
+    -fx-background-color: #922b21;
+}
+
+.root.light-theme .close-button:pressed .title-icon {
+    -fx-fill: #ffffff;
+}
+
+root.light-theme .narrative-area,
+root.light-theme .narrative-area .scroll-pane,
+root.light-theme .narrative-area .content {
+    -fx-background-color: #f5f2ed;
+    -fx-control-inner-background: #f5f2ed;
+}
+
+.root.light-theme .narrative-area {
+    -fx-text-fill: #2a0045
+}
+
+.root.light-theme .narrative-area .scroll-bar:vertical {
+    -fx-background-color: #e6e2f0;
+}
+
+.root.light-theme .narrative-area .scroll-bar:vertical .thumb{
+    -fx-background-color: #b7a6d9;
+}
+
+.root.light-theme .input-bar {
+    -fx-background-color: #e6e2f0;
+    -fx-border-color: #b7a6d9;
+}
+
+.root.light-theme .input-field {
+    -fx-background-color: #ffffff;
+    -fx-text-fill: #24202c;
+    -fx-prompt-text-fill: #8a7fa3;
+    -fx-border-color: #b7a6d9;
+}
+
+.root.light-theme .input-field:focused {
+    -fx-border-color: #6d45a8;
+    -fx-effect: dropshadow(gaussian, #b7a6d9, 6, 0.4, 0, 0);
+}
+
+.root.light-theme .submit-button {
+    -fx-background-color: #DCEDDA;
+    -fx-text-fill: #195E0E;
+}
+
+.root.light-theme .submit-button:hover {
+    -fx-background-color: #879c84;
+    -fx-effect: dropshadow(gaussian, #42693d, 6, 0.4, 0, 0);
+    -fx-text-fill: #0b3803;
+}
+
+.root.light-theme .submit-button:pressed {
+    -fx-background-color: #42693d;
+}
+
